@@ -1,13 +1,11 @@
 package eu.lubsen.rummikub.core
 
-import com.sun.org.apache.xpath.internal.operations.Bool
-
 enum class ResultType {
     SUCCESS,
     FAILURE
 }
 
-class MoveResult<T> constructor(private val type : ResultType) {
+class MoveResult<T> constructor(val type : ResultType) {
     var value : T? = null
     var message : String = ""
 
@@ -18,7 +16,7 @@ class MoveResult<T> constructor(private val type : ResultType) {
     fun isFailure() : Boolean {
         return type == ResultType.FAILURE
     }
-
+    
     fun unwrap() : T {
         return value!!
     }
@@ -30,7 +28,8 @@ fun <T> moveSuccess(t : T) : MoveResult<T> {
     return result
 }
 
-fun <T> moveFailure(msg : String) {
+fun <T> moveFailure(msg : String) : MoveResult<T> {
     val result = MoveResult<T>(ResultType.FAILURE)
     result.message = msg
+    return result
 }

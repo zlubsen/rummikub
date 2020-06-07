@@ -41,13 +41,14 @@ fun stopGame(game: Game) : Boolean {
 }
 
 fun playerDrawsFromHeap(game: Game, player: Player) : Boolean {
-    if (game.heap.isNotEmpty()) {
+    return if (game.heap.isNotEmpty()) {
         val tile: Tile = game.heap.random()
         game.heap.remove(tile)
-        val tileGroup = player.tileToHand(tile)
-        game.tileGroups[tileGroup.id] = tileGroup
-    }
-    return true
+        val tileSet = player.tileToHand(tile)
+        game.tileSets[tileSet.id] = tileSet
+        true
+    } else
+        false
 }
 
 fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Boolean {
@@ -63,36 +64,41 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Boole
 }
 
 fun splitTileSet(move : Move) : Boolean {
-    val tileGroupId = move.splitGroupId
+    val tileSetId = move.splitSetId
     val index : Int = move.splitIndex
 
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
-        MoveLocation.HAND -> move.game.currentPlayer.hand
+        MoveLocation.HAND -> move.game.getCurrentPlayer().hand
     }
 
-    if (!location.containsKey(tileGroupId))
+    if (!location.containsKey(tileSetId))
         return false
 
-    val newGroups = location[tileGroupId]?.let { split(it, index) }
-    if (newGroups != null && newGroups.size != 2) {
+    val newSets = location[tileSetId]?.let { split(it, index) }
+    if (newSets != null && newSets.size != 2) {
         return false
     }
 
-    for (group in newGroups!!) {
+    for (group in newSets!!) {
         location[group.id] = group
+        move.game.tileSets[group.id] = group
     }
-    location.remove(tileGroupId)
+    location.remove(tileSetId)
+    move.game.tileSets.remove(tileSetId)
 
     return true
 }
 
-fun mergeTileGroups(move: Move) : Boolean {
+fun mergeTileSets(move: Move) : Boolean {
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
-        MoveLocation.HAND -> move.game.currentPlayer.hand
+        MoveLocation.HAND -> move.game.getCurrentPlayer().hand
     }
-    var newGroup = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(it, it1) } }
+    var newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(it, it1) } }
+    move.game.tileSets.remove(move.leftMergeId)
+    move.game.tileSets.remove(move.rightMergeId)
+    move.game.tileSets[newSet!!.id] = newSet
 
     return true
 }
@@ -114,15 +120,10 @@ fun merge(left: TileSet, right : TileSet) : TileSet {
 
 fun playerEndsTurn(game: Game, player: Player) : Boolean {
     // check if initial play is met
-    if (!player.initialPlay)
+    if (!playerHasInitialPlay(player))
         return false
 
-    if (game.playerOrder.hasNext())
-        game.currentPlayer = game.playerOrder.next()
-    else {
-        game.initPlayerOrder()
-        game.currentPlayer = game.playerOrder.next()
-    }
+    game.nextPlayer()
     return true
 }
 
@@ -142,7 +143,7 @@ fun playerIsInGame(game: Game, player : Player) : Boolean {
 }
 
 fun isCurrentPlayer(game: Game, player: Player) : Boolean {
-    return game.currentPlayer == player
+    return game.getCurrentPlayer() == player
 }
 
 fun playerHasInitialPlay(player: Player) : Boolean {
@@ -150,18 +151,19 @@ fun playerHasInitialPlay(player: Player) : Boolean {
 }
 
 fun findTileSet(game : Game, id : UUID) : TileSet? {
-    var tileSet : TileSet? = null
-    if (game.table.containsKey(id)) {
-        tileSet = game.table[id]
-    } else {
-        for (player in game.players.values) {
-            if (tileSet != null)
-                break
-            if (player.hand.containsKey(id))
-                tileSet = player.hand[id]
-        }
-    }
-    return tileSet
+//    var tileSet : TileSet? = null
+//    if (game.table.containsKey(id)) {
+//        tileSet = game.table[id]
+//    } else {
+//        for (player in game.players.values) {
+//            if (tileSet != null)
+//                break
+//            if (player.hand.containsKey(id))
+//                tileSet = player.hand[id]
+//        }
+//    }
+//    return tileSet
+    return game.tileSets[id]
 }
 
 fun isValidTileSet(tileSet : TileSet) : Boolean {

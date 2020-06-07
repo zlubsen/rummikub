@@ -98,18 +98,29 @@ internal class GameLogicTest {
     fun playerEndsTurn() {
         var game = Game("endTurnTest")
         var player1 = Player("tester1")
+        player1.initialPlay = true
         var player2 = Player("tester2")
+        player2.initialPlay = true
+        var player3 = Player("tester3")
+        player3.initialPlay = true
         game.addPlayer(player1)
         game.addPlayer(player2)
+        game.addPlayer(player3)
         game.startGame()
 
-        assertEquals(player1, game.currentPlayer)
-        assertTrue(game.playerOrder.hasNext())
+        assertEquals(player1, game.getCurrentPlayer())
 
         playerEndsTurn(game, player1)
 
-        assertEquals(player2, game.currentPlayer)
-        assertTrue(game.playerOrder.hasNext())
+        assertEquals(player2, game.getCurrentPlayer())
+
+        playerEndsTurn(game, player2)
+
+        assertEquals(player3, game.getCurrentPlayer())
+
+        playerEndsTurn(game, player3)
+
+        assertEquals(player1, game.getCurrentPlayer())
     }
 
     @Test

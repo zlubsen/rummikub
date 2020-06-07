@@ -10,10 +10,10 @@ class Game constructor(val name: String) {
     var players : MutableMap<UUID, Player> = mutableMapOf()
     var table : MutableMap<UUID, TileSet> = mutableMapOf()
     var heap : MutableList<Tile> = mutableListOf()
-    lateinit var currentPlayer : Player
-    lateinit var playerOrder : Iterator<Player>
 
-    var tileGroups : MutableMap<UUID, TileSet> = mutableMapOf()
+    var currentPlayerIndex : Int = 0
+
+    var tileSets : MutableMap<UUID, TileSet> = mutableMapOf()
 
     fun addPlayer(player: Player) {
         assert(gameState == GameState.JOINING)
@@ -24,6 +24,17 @@ class Game constructor(val name: String) {
         assert(gameState == GameState.JOINING)
         if (players.containsKey(player.id))
             players.remove(player.id)
+    }
+
+    fun getCurrentPlayer() : Player {
+        return players[players.keys.toList()[currentPlayerIndex]]!!
+    }
+
+    fun nextPlayer() {
+        if (currentPlayerIndex < players.keys.indices.last)
+            currentPlayerIndex++
+        else
+            currentPlayerIndex = players.keys.indices.first
     }
 
     fun getPlayer(id : UUID) : Player? {
@@ -38,9 +49,9 @@ class Game constructor(val name: String) {
         return when (move.moveType) {
             MoveType.HAND_TO_TABLE -> allowedToPlay && playerPutsTilesOnTable(move.game, move.player, move.tilesToTable)
             MoveType.SPLIT -> allowedToArrange && splitTileSet(move)
-            MoveType.MERGE -> allowedToArrange && mergeTileGroups(move)
+            MoveType.MERGE -> allowedToArrange && mergeTileSets(move)
             MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(move.game, move.player)
-            MoveType.END_TURN -> allowedToPlay && TODO()
+            MoveType.END_TURN -> allowedToPlay && playerEndsTurn(move.game, move.player)
             MoveType.TAKE_JOKER -> allowedToPlay && TODO()
         }
     }
@@ -54,8 +65,6 @@ class Game constructor(val name: String) {
     private fun initGame() {
         initHeap(createTiles())
         initPlayerBoards()
-        initPlayerOrder()
-        currentPlayer = playerOrder.next()
     }
 
     fun createTiles() : List<Tile> {
@@ -83,10 +92,6 @@ class Game constructor(val name: String) {
         }
     }
 
-    fun initPlayerOrder() {
-        playerOrder = players.values.iterator()
-    }
-
     fun stopGame() {
         gameState = GameState.FINISHED
     }
@@ -95,7 +100,7 @@ class Game constructor(val name: String) {
         return JsonObject()
             .put("name", name)
             .put("gameState", gameState.name)
-            .put("currentPlayer", currentPlayer.id.toString())
+            .put("currentPlayer", getCurrentPlayer().id.toString())
             .put("players", JsonArray(players.values.toList().map { p -> p.toJson() }))
             .put("table", JsonArray(table.values.toList()))
     }

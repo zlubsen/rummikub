@@ -79,7 +79,7 @@ class ServerVerticle : AbstractVerticle() {
             MoveType.SPLIT -> {
                 move.moveLocation = MoveLocation.valueOf(json.getString("moveLocation"))
                 move.splitIndex = json.getInteger("splitIndex")
-                move.splitGroupId = UUID.fromString(json.getString("splitGroupId"))
+                move.splitSetId = UUID.fromString(json.getString("splitGroupId"))
             }
             MoveType.MERGE -> {
                 move.moveLocation = MoveLocation.valueOf(json.getString("moveLocation"))
