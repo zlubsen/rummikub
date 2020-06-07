@@ -1,0 +1,87 @@
+<!--
+  ~ Copyright 2011-2012 the original author or authors.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Client Websocket Tester</title>
+</head>
+<body>
+<script>
+    var socket;
+
+    function connect(playerName) {
+        if (window.WebSocket) {
+            socket = new WebSocket("ws://localhost:8080/join?name="+playerName);
+            socket.onmessage = function (event) {
+                document.getElementById("response").value = event.data;
+                // alert("Received data from websocket: " + event.data);
+            }
+            socket.onopen = function (event) {
+                alert("Web Socket opened!");
+                socket.send(playerName)
+            };
+            socket.onclose = function (event) {
+                alert("Web Socket closed.");
+            };
+        } else {
+            alert("Your browser does not support Websockets. (Use Chrome)");
+        }
+    }
+
+    function disconnect() {
+        if (socket.readyState == WebSocket.OPEN) {
+            socket.close();
+        }
+    }
+
+    function send(message) {
+        if (!window.WebSocket) {
+            return;
+        }
+        if (socket.readyState == WebSocket.OPEN) {
+            socket.send(message);
+        } else {
+            alert("The socket is not open.");
+        }
+    }
+
+    function testREST() {
+        const userAction = async () => {
+            const response = await fetch('http://localhost:8080');
+            alert(response.headers)
+            const myJson = await response.body//.json(); //extract JSON from the http response
+            alert(myJson);
+        }
+    }
+</script>
+<form onsubmit="return false;">
+    <input type="text" name="message" value="Hello, World!"/>
+    <input type="text" name="response" id="response" value=""/>
+    <input type="button" value="Send Web Socket Data" onclick="send(this.form.message.value)"/>
+</form>
+<div>
+    <form onsubmit="return false;">
+        <input type="text" name="playername" value="Name"/>
+        <input type="button" value="Connect to server" onclick="connect(this.form.playername.value)"/>
+        <input type="button" value="Disconnect from server" onclick="disconnect()"/>
+</div>
+<div>
+    <input type="button" value="Test REST" onclick="testREST()">
+</div>
+</body>
+</html>
