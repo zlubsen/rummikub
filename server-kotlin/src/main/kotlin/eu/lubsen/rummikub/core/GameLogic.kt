@@ -3,10 +3,6 @@ package eu.lubsen.rummikub.core
 import eu.lubsen.rummikub.model.*
 import java.util.*
 
-fun createGame(name : String) : Game {
-    return Game(name)
-}
-
 fun joinGame(game: Game, player: Player) : Boolean {
     return if (GameState.JOINING == game.gameState) {
         game.players[player.id] = player
@@ -38,6 +34,20 @@ fun stopGame(game: Game) : Boolean {
         true
     } else
         false
+}
+
+fun tryMove(game: Game, move: Move) : Boolean {
+    assert(game.gameState == GameState.STARTED)
+    val allowedToPlay = playerCanPlay(move)
+    val allowedToArrange = playerCanArrangeHand(move)
+
+    return when (move.moveType) {
+        MoveType.HAND_TO_TABLE -> allowedToPlay && playerPutsTilesOnTable(move.game, move.player, move.tilesToTable)
+        MoveType.SPLIT -> allowedToArrange && splitTileSet(move)
+        MoveType.MERGE -> allowedToArrange && mergeTileSets(move)
+        MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(move.game, move.player)
+        MoveType.END_TURN -> allowedToPlay && playerEndsTurn(move.game, move.player)
+    }
 }
 
 fun playerDrawsFromHeap(game: Game, player: Player) : Boolean {
@@ -198,29 +208,29 @@ fun doesNotExceedRunLength(tiles: List<Tile>) : Boolean {
 }
 
 fun allSameTileColor(tiles : List<Tile>) : Boolean {
-    return tiles.stream()
+    return tiles
         .filter { t -> tileIsRegular(t) }
-        .map { t -> t.color }.distinct().count().toInt() == 1
+        .map { t -> t.color }.distinct().count() == 1
 }
 
 fun allSameTileValue(tiles : List<Tile>) : Boolean {
-    return tiles.stream()
+    return tiles
         .filter { t-> tileIsRegular(t) }
         .map { t -> t.value }
         .distinct()
-        .count().toInt() == 1
+        .count() == 1
 }
 
 fun allUniqueTileColor(tiles: List<Tile>) : Boolean {
-    val distinct = tiles.size - tiles.stream().filter {t-> tileIsJoker(t)}.count().toInt()
-    return tiles.stream()
+    val distinct = tiles.size - tiles.filter { t-> tileIsJoker(t)}.count()
+    return tiles
         .filter { t -> tileIsRegular(t) }
         .map { t -> t.color }.distinct().count().toInt() == distinct
 }
 
 fun allUniqueTileValue(tiles: List<Tile>) : Boolean {
-    val distinct = tiles.size - tiles.stream().filter {t-> tileIsJoker(t)}.count().toInt()
-    return tiles.stream()
+    val distinct = tiles.size - tiles.filter {t-> tileIsJoker(t)}.count()
+    return tiles
         .filter { t -> tileIsRegular(t) }
         .map { t -> t.value }.distinct().count().toInt() == distinct
 }

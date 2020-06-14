@@ -10,14 +10,16 @@ class Move constructor(val game: Game, val player : Player, val moveType: MoveTy
     lateinit var tilesToTable : UUID
     lateinit var moveLocation : MoveLocation
 
-    fun setSplit(groupId: UUID, index : Int) {
-        splitSetId = groupId
+    fun setSplit(location: MoveLocation, tileSetId: UUID, index : Int) {
+        moveLocation = location
+        splitSetId = tileSetId
         splitIndex = index
     }
 
-    fun setMerger(left : UUID, right : UUID) {
-        leftMergeId = left
-        rightMergeId = right
+    fun setMerger(location: MoveLocation, leftId : UUID, rightId : UUID) {
+        moveLocation = location
+        leftMergeId = leftId
+        rightMergeId = rightId
     }
 
     fun setPutOnTable(tileGroup : UUID) {

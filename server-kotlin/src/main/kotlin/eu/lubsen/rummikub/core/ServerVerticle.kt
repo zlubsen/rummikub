@@ -1,5 +1,6 @@
 package eu.lubsen.rummikub.core
 
+import eu.lubsen.rummikub.idl.client.*
 import eu.lubsen.rummikub.model.*
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
@@ -64,32 +65,47 @@ class ServerVerticle : AbstractVerticle() {
     }
 
     private fun receiveMessage(buffer : Buffer) {
-        var message = JsonObject.mapFrom(buffer.getString(0, buffer.length()))
-        println(message)
+        val json = JsonObject.mapFrom(buffer.getString(0, buffer.length()))
+        val message = when(ClientMessageType.valueOf(json.getString("messageType"))) {
+            ClientMessageType.CreateGame -> CreateGame(json)
+            ClientMessageType.RemoveGame -> RemoveGame(json)
+            ClientMessageType.JoinGame -> JoinGame(json)
+            ClientMessageType.LeaveGame -> LeaveGame(json)
+            ClientMessageType.StartGame -> StartGame(json)
+            ClientMessageType.StopGame -> StopGame(json)
+            ClientMessageType.RequestGameList -> RequestGameList(json)
+            ClientMessageType.RequestPlayerList -> RequestPlayerList(json)
+            ClientMessageType.PlayerMove -> PlayerMove(json, lounge)
+        }
+
+        processClientMessage(message)
     }
 
-    fun parseMove(json : JsonObject) : Move {
-        val game : Game = lounge.games[json.getString("gameName")]!!
-        val player : Player = lounge.players[UUID.fromString(json.getString("playerId"))]!!
-        val moveType : MoveType = MoveType.valueOf(json.getString("moveType"))!!
-        var move = Move(game, player, moveType)
-
-        when (move.moveType) {
-            MoveType.HAND_TO_TABLE -> {move.tilesToTable = UUID.fromString(json.getString("tileGroupId"))}
-            MoveType.SPLIT -> {
-                move.moveLocation = MoveLocation.valueOf(json.getString("moveLocation"))
-                move.splitIndex = json.getInteger("splitIndex")
-                move.splitSetId = UUID.fromString(json.getString("splitGroupId"))
+    private fun processClientMessage(message : ClientMessage) {
+        if (isValidPlayerId(lounge = lounge, playerId = message.playerId)) {
+            when (message) {
+                is CreateGame -> createGame(lounge = lounge, name = message.gameName, ownerId = message.playerId)
+                is RemoveGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && removeGame(
+                    lounge = lounge,
+                    gameName = message.gameName,
+                    ownerId = message.playerId
+                )
+                is JoinGame -> isValidGameName(lounge = lounge, gameName = message.gameName) && joinGame(game = lounge.games[message.gameName]!!, player = lounge.players[message.playerId]!!)
+                is LeaveGame -> isValidGameName(lounge = lounge, gameName = message.gameName) && leaveGame(game = lounge.games[message.gameName]!!, player = lounge.players[message.playerId]!!)
+                is RequestGameList -> respondGameList(requesterId = message.playerId)
+                is RequestPlayerList -> respondPlayerList(requesterId = message.playerId)
+                is StartGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && startGame(game = lounge.games[message.gameName]!!)
+                is StopGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && stopGame(game = lounge.games[message.gameName]!!)
+                is PlayerMove -> isValidGameName(lounge = lounge, gameName = message.gameName) && tryMove(game = lounge.games[message.gameName]!!, move = message.move)
             }
-            MoveType.MERGE -> {
-                move.moveLocation = MoveLocation.valueOf(json.getString("moveLocation"))
-                move.leftMergeId = UUID.fromString(json.getString("leftMergeId"))
-                move.rightMergeId = UUID.fromString(json.getString("rightMergeId"))
-            }
-            MoveType.TAKE_FROM_HEAP -> null
-            MoveType.END_TURN -> null
-            MoveType.TAKE_JOKER -> TODO() //
         }
-        return move
+    }
+
+    private fun respondGameList(requesterId : UUID) {
+        TODO("Server message: respond list of games")
+    }
+
+    private fun respondPlayerList(requesterId : UUID) {
+        TODO("Server message: respond list of players")
     }
 }

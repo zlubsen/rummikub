@@ -8,9 +8,9 @@ internal class GameLogicTest {
 
     @Test
     fun playerDrawsFromHeap() {
-        var game = Game("drawTest")
         var player1 = Player("tester1")
         var player2 = Player("tester2")
+        var game = Game("drawTest", player1)
         game.addPlayer(player1)
         game.addPlayer(player2)
         game.startGame()
@@ -26,8 +26,8 @@ internal class GameLogicTest {
 
     @Test
     fun playerPutsTilesOnTable() {
-        var game = Game("handToTableTest")
         var player1 = Player("tester1")
+        var game = Game("handToTableTest", player1)
         game.addPlayer(player1)
         game.startGame()
         val tileSet = getFirstTileSetFromHand(player1)
@@ -96,13 +96,13 @@ internal class GameLogicTest {
 
     @Test
     fun playerEndsTurn() {
-        var game = Game("endTurnTest")
         var player1 = Player("tester1")
         player1.initialPlay = true
         var player2 = Player("tester2")
         player2.initialPlay = true
         var player3 = Player("tester3")
         player3.initialPlay = true
+        var game = Game("endTurnTest", player1)
         game.addPlayer(player1)
         game.addPlayer(player2)
         game.addPlayer(player3)

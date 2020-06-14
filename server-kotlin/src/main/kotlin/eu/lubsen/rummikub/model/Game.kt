@@ -5,7 +5,7 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import java.util.UUID
 
-class Game constructor(val name: String) {
+class Game constructor(val name: String, val owner : Player) {
     var gameState = GameState.JOINING
     var players : MutableMap<UUID, Player> = mutableMapOf()
     var table : MutableMap<UUID, TileSet> = mutableMapOf()
@@ -41,21 +41,6 @@ class Game constructor(val name: String) {
         return players[id]
     }
 
-    fun tryMove(move: Move) : Boolean {
-        assert(gameState == GameState.STARTED)
-        val allowedToPlay = playerCanPlay(move)
-        val allowedToArrange = playerCanArrangeHand(move)
-
-        return when (move.moveType) {
-            MoveType.HAND_TO_TABLE -> allowedToPlay && playerPutsTilesOnTable(move.game, move.player, move.tilesToTable)
-            MoveType.SPLIT -> allowedToArrange && splitTileSet(move)
-            MoveType.MERGE -> allowedToArrange && mergeTileSets(move)
-            MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(move.game, move.player)
-            MoveType.END_TURN -> allowedToPlay && playerEndsTurn(move.game, move.player)
-            MoveType.TAKE_JOKER -> allowedToPlay && TODO()
-        }
-    }
-
     fun startGame() {
         assert(gameState == GameState.JOINING)
         initGame()
@@ -69,8 +54,8 @@ class Game constructor(val name: String) {
 
     fun createTiles() : List<Tile> {
         val tiles = mutableListOf<Tile>()
-        TileColor.values().forEach { color ->
-            TileNumber.values().forEach { number ->
+        TileColor.values().filter { color -> color != TileColor.ANY }.forEach { color ->
+            TileNumber.values().filter { number -> number != TileNumber.ANY }.forEach { number ->
                 tiles.add(Tile(number, color, TileType.REGULAR))
             }
         }

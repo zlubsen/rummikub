@@ -14,9 +14,9 @@ class Lounge {
         return games.values.toList()
     }
 
-    fun createGame(name : String) : Boolean {
+    fun createGame(name : String, owner : Player) : Boolean {
         return if (!games.contains(name)) {
-            val game = Game(name)
+            val game = Game(name, owner)
             games[game.name] = game
             true
         } else {

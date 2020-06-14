@@ -4,8 +4,8 @@ internal class GameTest {
 
     @org.junit.jupiter.api.Test
     fun addPlayer() {
-        val game = Game("MyTestGame")
         val player = Player("Player1")
+        val game = Game("MyTestGame", player)
 
         assert(game.players.isEmpty())
 
@@ -17,8 +17,8 @@ internal class GameTest {
 
     @org.junit.jupiter.api.Test
     fun removePlayer() {
-        val game = Game("MyTestGame")
         val player = Player("Player1")
+        val game = Game("MyTestGame", player)
         game.addPlayer(player)
         game.removePlayer(player)
 
@@ -27,17 +27,17 @@ internal class GameTest {
 
     @org.junit.jupiter.api.Test
     fun getPlayer() {
-        val game = Game("MyTestGame")
         val player = Player("Player1")
+        val game = Game("MyTestGame", player)
         game.addPlayer(player)
         assert(game.getPlayer(player.id) == player)
     }
 
     @org.junit.jupiter.api.Test
     fun startGame() {
-        val game = Game("MyTestGame")
         val player1 = Player("Player1")
         val player2 = Player("Player2")
+        val game = Game("MyTestGame", player1)
         game.addPlayer(player1)
         game.addPlayer(player2)
         game.startGame()
@@ -49,7 +49,7 @@ internal class GameTest {
 
     @org.junit.jupiter.api.Test
     fun createTiles() {
-        val game = Game("MyTestGame")
+        val game = Game("MyTestGame", Player("player1"))
         val tiles = game.createTiles()
         assert(tiles.size == (4 * 13) + 2)
     }
