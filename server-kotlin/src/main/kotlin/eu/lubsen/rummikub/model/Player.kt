@@ -21,6 +21,7 @@ class Player constructor(val playerName : String) {
     fun toJson() : JsonObject {
         return JsonObject()
             .put("id", id.toString())
-            .put("hand", hand.values.toList().map { tileGroup -> tileGroup.toJson() })
+            .put("name", playerName)
+//            .put("hand", hand.values.toList().map { tileGroup -> tileGroup.toJson() })
     }
 }

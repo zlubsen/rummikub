@@ -23,7 +23,7 @@ fun createGame(lounge : Lounge, name : String, ownerId : UUID) : Boolean {
         lounge.games[name] = Game(name, lounge.players[ownerId]!!)
         true
     } else {
-        TODO("error message, there is already a game with 'name'")
+//        TODO ("error message, there is already a game with 'name'")
         false
     }
 }
@@ -35,7 +35,7 @@ fun removeGame(lounge : Lounge, gameName : String, ownerId : UUID) : Boolean {
         true
     }
     else {
-        TODO("error message that games with 'name' does not exist")
+//        TODO ("error message that games with 'name' does not exist")
         false
     }
 }

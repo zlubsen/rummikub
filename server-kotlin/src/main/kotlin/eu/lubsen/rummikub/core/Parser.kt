@@ -48,8 +48,8 @@ fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
                 UUID.fromString(json.getString("rightMergeId"))
             )
         }
-        MoveType.TAKE_FROM_HEAP -> null
-        MoveType.END_TURN -> null
+        MoveType.TAKE_FROM_HEAP -> {}
+        MoveType.END_TURN -> {}
     }
     return move
 }
