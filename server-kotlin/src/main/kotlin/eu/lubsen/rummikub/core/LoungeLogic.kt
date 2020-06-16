@@ -1,5 +1,6 @@
 package eu.lubsen.rummikub.core
 
+import eu.lubsen.rummikub.idl.server.GameRemoved
 import eu.lubsen.rummikub.model.Game
 import eu.lubsen.rummikub.model.Lounge
 import java.util.UUID
@@ -18,25 +19,23 @@ fun isValidGameName(lounge: Lounge, gameName: String) : Boolean {
     return lounge.games.containsKey(gameName)
 }
 
-fun createGame(lounge : Lounge, name : String, ownerId : UUID) : Boolean {
-    return if (!lounge.games.containsKey(name)) {
-        lounge.games[name] = Game(name, lounge.players[ownerId]!!)
-        true
+fun createGame(lounge : Lounge, gameName : String, ownerId : UUID) : Result {
+    return if (!lounge.games.containsKey(gameName)) {
+        lounge.games[gameName] = Game(gameName, lounge.players[ownerId]!!)
+        Success(gameName)
     } else {
-//        TODO ("error message, there is already a game with 'name'")
-        false
+        Failure("Cannot create game with '$gameName', name already exists.")
     }
 }
 
-fun removeGame(lounge : Lounge, gameName : String, ownerId : UUID) : Boolean {
-    return if (playerIsOwner(lounge = lounge, gameName = gameName, playerId = ownerId)) {
+fun removeGame(lounge : Lounge, gameName : String) : Result {
+    return if (isValidGameName(lounge = lounge, gameName = gameName)) {
         val game = lounge.games.remove(gameName)!!
         game.players.forEach { (k, p) -> TODO("Server message: Notify players in the game that the game is closed") }
-        true
+        Success(Pair(listOf(game.players.values), GameRemoved(0, game)))
     }
     else {
-//        TODO ("error message that games with 'name' does not exist")
-        false
+        Failure("Cannot remove game '$gameName', name does not exist.")
     }
 }
 

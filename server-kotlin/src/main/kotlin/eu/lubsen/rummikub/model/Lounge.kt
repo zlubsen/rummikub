@@ -1,10 +1,24 @@
 package eu.lubsen.rummikub.model
 
+import eu.lubsen.rummikub.core.Failure
+import eu.lubsen.rummikub.core.Result
+import eu.lubsen.rummikub.core.Success
 import java.util.UUID
 
 class Lounge {
     var players = mutableMapOf<UUID, Player>()
     var games = mutableMapOf<String, Game>()
+
+    fun playerConnects(player: Player) {
+        players[player.id] = player
+    }
+
+    fun playerDisconnects(player: Player) {
+        players.remove(player.id)
+
+        games.values.forEach { it.players.remove(player.id) }
+        // TODO: how to handle a player dropping out of an ongoing game?
+    }
 
     fun listPlayers() : List<Player> {
         return players.values.toList()
@@ -14,13 +28,13 @@ class Lounge {
         return games.values.toList()
     }
 
-    fun createGame(name : String, owner : Player) : Boolean {
+    fun createGame(name : String, owner : Player) : Result {
         return if (!games.contains(name)) {
             val game = Game(name, owner)
             games[game.name] = game
-            true
+            Success(game)
         } else {
-            false
+            Failure("There is already a game with name '$name'")
         }
     }
 

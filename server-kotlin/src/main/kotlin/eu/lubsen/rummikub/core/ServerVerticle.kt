@@ -1,6 +1,7 @@
 package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.idl.client.*
+import eu.lubsen.rummikub.idl.server.*
 import eu.lubsen.rummikub.model.*
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
@@ -11,12 +12,11 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import java.util.*
-import kotlin.concurrent.timer
 
 class ServerVerticle : AbstractVerticle() {
-    private lateinit var heartbeatTimer : Timer
+//    private lateinit var heartbeatTimer : Timer
 
-    private var clientSockets = mutableMapOf<String, ServerWebSocket>()
+    private var clientSockets = mutableMapOf<UUID, ServerWebSocket>()
 
     private var lounge = Lounge()
 
@@ -31,10 +31,10 @@ class ServerVerticle : AbstractVerticle() {
 
         println("Server running")
 
-        heartbeatTimer = timer("heartbeat",false,0,2000) {
-            for ((id, socket) in clientSockets) {
-                if(!socket.isClosed) socket.writeTextMessage(System.currentTimeMillis().toString())}
-            }
+//        heartbeatTimer = timer("heartbeat",false,0,2000) {
+//            for ((id, socket) in clientSockets) {
+//                if(!socket.isClosed) socket.writeTextMessage(System.currentTimeMillis().toString())}
+//            }
     }
 
     private fun handleRoot(context: RoutingContext) {
@@ -49,23 +49,32 @@ class ServerVerticle : AbstractVerticle() {
         var userName : String = context.request().params().get("name")
 
         var webSocket = context.request().upgrade()
-        webSocket.handler(this::receiveMessage)
+        webSocket.handler(this::receiveMessageHandler)
         webSocket.closeHandler {
-            var playerId = ""
+            var playerId : UUID? = null
             clientSockets.forEach {
                     (id, socket) ->
-                if (socket == webSocket)
+                if (socket.isClosed)
                     playerId = id
             }
-            if (!playerId.isNullOrBlank()) {
-                clientSockets.remove(playerId)
+            if (playerId != null) {
+                clientSockets.remove(playerId!!)
+                lounge.playerDisconnects(lounge.players[playerId!!]!!)
             }
         }
-        clientSockets[userName] = webSocket
+        // add the player
+        val player = Player(userName)
+        clientSockets[player.id] = webSocket
+        lounge.players[player.id] = player
+
+        val response = Connected(0, player)
+        clientSockets[player.id]!!.writeTextMessage(response.toJson())
     }
 
-    private fun receiveMessage(buffer : Buffer) {
-        val json = JsonObject.mapFrom(buffer.getString(0, buffer.length()))
+    private fun receiveMessageHandler(buffer : Buffer) =
+        receiveMessageJson(JsonObject(buffer.getString(0, buffer.length())))
+
+    private fun receiveMessageJson(json : JsonObject) {
         val message = when(ClientMessageType.valueOf(json.getString("messageType"))) {
             ClientMessageType.CreateGame -> CreateGame(json)
             ClientMessageType.RemoveGame -> RemoveGame(json)
@@ -78,34 +87,54 @@ class ServerVerticle : AbstractVerticle() {
             ClientMessageType.PlayerMove -> PlayerMove(json, lounge)
         }
 
-        processClientMessage(message)
+        handleClientMessage(message)
     }
 
-    private fun processClientMessage(message : ClientMessage) {
+    private fun handleClientMessage(message : ClientMessage) {
         if (isValidPlayerId(lounge = lounge, playerId = message.playerId)) {
-            when (message) {
-                is CreateGame -> createGame(lounge = lounge, name = message.gameName, ownerId = message.playerId)
-                is RemoveGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && removeGame(
-                    lounge = lounge,
-                    gameName = message.gameName,
-                    ownerId = message.playerId
-                )
-                is JoinGame -> isValidGameName(lounge = lounge, gameName = message.gameName) && joinGame(game = lounge.games[message.gameName]!!, player = lounge.players[message.playerId]!!)
-                is LeaveGame -> isValidGameName(lounge = lounge, gameName = message.gameName) && leaveGame(game = lounge.games[message.gameName]!!, player = lounge.players[message.playerId]!!)
+            val result = when (message) {
+                is CreateGame -> handleCreateGame(lounge = lounge, gameName = message.gameName, ownerId = message.playerId)
+                is RemoveGame -> handleRemoveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
+                is JoinGame -> handleJoinGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
+                is LeaveGame -> handleLeaveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is RequestGameList -> respondGameList(requesterId = message.playerId)
                 is RequestPlayerList -> respondPlayerList(requesterId = message.playerId)
-                is StartGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && startGame(game = lounge.games[message.gameName]!!)
-                is StopGame -> playerIsOwner(lounge = lounge, gameName = message.gameName, playerId = message.playerId) && stopGame(game = lounge.games[message.gameName]!!)
-                is PlayerMove -> isValidGameName(lounge = lounge, gameName = message.gameName) && tryMove(game = lounge.games[message.gameName]!!, move = message.move)
+                is StartGame -> handleStartGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
+                is StopGame -> handleStopGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
+                is PlayerMove -> handlePlayerMove(lounge = lounge, gameName = message.gameName, move = message.move)
             }
+            // TODO: figure out how to collect recipients and the message; as a Pair in a Result, or in the ServerMessage object
+            when(result) {
+                is Success<*> -> {  }
+                is Failure -> respondMessage(
+                    recipients = listOf(message.playerId),
+                    message = MessageResponse(eventNumber = 0, message = result.message()))
+            }
+        } else
+            respondMessage(
+                recipients = listOf(message.playerId),
+                message = MessageResponse(eventNumber = 0, message = "Invalid player ID."))
+    }
+
+    private fun respondMessage(recipients : List<UUID>, message : ServerMessage) {
+        for (recipient in recipients) {
+            val channel = clientSockets[recipient]
+            channel?.writeTextMessage(message.toJson())
         }
     }
 
-    private fun respondGameList(requesterId : UUID) {
-        TODO("Server message: respond list of games")
+    private fun respondGameList(requesterId : UUID) : Result {
+        val message = GameListResponse(eventNumber = 0, games = lounge.listGames())
+
+        val receiver = clientSockets[requesterId]
+        receiver?.writeTextMessage(message.toJson())
+        return Success(true)
     }
 
     private fun respondPlayerList(requesterId : UUID) {
-        TODO("Server message: respond list of players")
+        val message = PlayerListResponse(eventNumber = 0, players = lounge.listPlayers())
+
+        val receiver = clientSockets[requesterId]
+        receiver?.writeTextMessage(message.toJson())
     }
 }

@@ -4,6 +4,7 @@ import eu.lubsen.rummikub.model.Game
 import eu.lubsen.rummikub.model.Player
 
 enum class ServerMessageType {
+    Connected,
     PlayerConnected,
     PlayerDisconnected,
     GameCreated,
@@ -14,7 +15,7 @@ enum class ServerMessageType {
     GameStopped,
     GameFinished,
     PlayedMove,
-    InvalidMove,
+    MessageResponse,
     GameListResponse,
     PlayerListResponse
 }
@@ -23,6 +24,20 @@ sealed class ServerMessage constructor(val eventNumber : Long) {
     abstract val type : ServerMessageType
 
     abstract fun toJson() : String
+}
+
+class Connected constructor(eventNumber: Long, val player: Player) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.Connected
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "player" : ${player.toJson()}
+            }
+        """.trimIndent()
+    }
 }
 
 class PlayerConnected constructor(eventNumber : Long, val player : Player) : ServerMessage(eventNumber = eventNumber) {
@@ -62,10 +77,12 @@ class GameCreated constructor(eventNumber : Long, val game : Game) : ServerMessa
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "game" : {
-                    "name" : ${game.name},
-                    "gameState" : ${game.gameState},
+                    "name" : "${game.name}",
+                    "gameState" : "${game.gameState}",
                     "players" : [
-                        ${game.players.keys.joinToString { "," }}
+                        ${game.players.keys.joinToString(
+                                separator = ","
+                            ) { id -> "\"${id}\"" }}
                     ]
                 }
             }
@@ -81,7 +98,7 @@ class GameRemoved constructor(eventNumber : Long, val game: Game) : ServerMessag
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name}
+                "gameName" : "${game.name}"
             }
         """.trimIndent()
     }
@@ -95,8 +112,8 @@ class PlayerJoinedGame constructor(eventNumber : Long, val game: Game, val playe
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name},
-                "playerId" : ${player.id}
+                "gameName" : "${game.name}",
+                "playerId" : "${player.id}"
             }
         """.trimIndent()
     }
@@ -110,8 +127,8 @@ class PlayerLeftGame constructor(eventNumber : Long, val game: Game, val player:
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name},
-                "playerId" : ${player.id}
+                "gameName" : "${game.name}",
+                "playerId" : "${player.id}"
             }
         """.trimIndent()
     }
@@ -125,7 +142,7 @@ class GameStarted constructor(eventNumber : Long, val game: Game) : ServerMessag
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name}
+                "gameName" : "${game.name}"
             }
         """.trimIndent()
     }
@@ -139,7 +156,7 @@ class GameStopped constructor(eventNumber : Long, val game: Game) : ServerMessag
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name}
+                "gameName" : "${game.name}"
             }
         """.trimIndent()
     }
@@ -153,7 +170,7 @@ class GameFinished constructor(eventNumber : Long, val game: Game) : ServerMessa
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : ${game.name}
+                "gameName" : "${game.name}"
             }
         """.trimIndent()
     }
@@ -172,21 +189,21 @@ class PlayedMove constructor(eventNumber : Long) : ServerMessage(eventNumber = e
     }
 }
 
-class InvalidMove constructor(eventNumber : Long, private val message : String) : ServerMessage(eventNumber = eventNumber) {
-    override val type: ServerMessageType = ServerMessageType.InvalidMove
+class MessageResponse constructor(eventNumber : Long, private val message : String) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.MessageResponse
 
     override fun toJson(): String {
         return """
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "error" : "$message"
+                "message" : "$message"
             }
         """.trimIndent()
     }
 }
 
-class GameListResponse constructor(eventNumber : Long, val games : List<Game>) : ServerMessage(eventNumber = eventNumber) {
+class GameListResponse constructor(eventNumber : Long, private val games : List<Game>) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.GameListResponse
 
     override fun toJson(): String {
@@ -194,15 +211,19 @@ class GameListResponse constructor(eventNumber : Long, val games : List<Game>) :
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "games" : [
-                    ${games.joinToString { """ "gameName" : "${it.name}", """ }}
-                ]
+                "games" : 
+                    ${games.joinToString(
+                        separator = ",",
+                        prefix = "[",
+                        postfix = "]")
+                        { game -> """{"gameName" : "${game.name}"}""" }
+                    }
             }
         """.trimIndent()
     }
 }
 
-class PlayerListResponse constructor(eventNumber : Long, val players : List<Player>) : ServerMessage(eventNumber = eventNumber) {
+class PlayerListResponse constructor(eventNumber : Long, private val players : List<Player>) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.PlayerListResponse
 
     override fun toJson(): String {
@@ -210,14 +231,18 @@ class PlayerListResponse constructor(eventNumber : Long, val players : List<Play
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "players" : [
-                    ${players.joinToString { """
-                        [
-                            "id" : "${it.id}",
-                            "name" : "${it.playerName}"
-                        ] """.trimIndent()
-                    }}
-                ]
+                "players" : 
+                    ${players.joinToString(
+                        separator = ",",
+                        prefix = "[",
+                        postfix = "]")
+                        { player -> """
+                            {
+                                "id" : "${player.id}",
+                                "name" : "${player.playerName}"
+                            }"""
+                        }
+                }
             }
         """.trimIndent()
     }

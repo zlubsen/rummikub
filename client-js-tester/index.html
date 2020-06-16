@@ -22,24 +22,42 @@
 </head>
 <body>
 <script>
-    var socket;
+    let socket;
+    let playerId;
+    let playerName;
 
     function connect(playerName) {
         if (window.WebSocket) {
             socket = new WebSocket("ws://localhost:8080/join?name="+playerName);
             socket.onmessage = function (event) {
-                document.getElementById("response").value = event.data;
-                // alert("Received data from websocket: " + event.data);
+                let message = JSON.parse(event.data)
+                let messageType = message.messageType
+                switch (messageType) {
+                    case "MessageResponse":
+                        document.getElementById("messageField").textContent = message.message
+                        break;
+                    case "Connected":
+                        playerId = message.player.id
+                        playerName = message.player.name
+                        document.getElementById("response").value = playerName + " " + playerId
+                        break;
+                    case "GameListResponse":
+                        document.getElementById("messages").textContent = event.data
+                        break;
+                    case "PlayerListResponse":
+                        document.getElementById("messages").textContent = event.data
+                        break;
+                    default:
+                        break;
+                }
             }
             socket.onopen = function (event) {
-                alert("Web Socket opened!");
-                socket.send(playerName)
             };
             socket.onclose = function (event) {
-                alert("Web Socket closed.");
+                // TODO handle server disconnect
             };
         } else {
-            alert("Your browser does not support Websockets. (Use Chrome)");
+            alert("Your browser does not support Websockets. Which is weird nowadays.");
         }
     }
 
@@ -68,7 +86,33 @@
             alert(myJson);
         }
     }
+
+    function requestPlayers() {
+        const message = {
+            messageType : "RequestPlayerList",
+            playerId : playerId
+        }
+        socket.send(JSON.stringify(message))
+    }
+
+    function requestGames() {
+        const message = {
+            messageType : "RequestGameList",
+            playerId : playerId
+        }
+        socket.send(JSON.stringify(message))
+    }
+
+    function newGame(name) {
+        const message = {
+            messageType : "CreateGame",
+            playerId : playerId,
+            gameId : name
+        }
+        socket.send(JSON.stringify(message))
+    }
 </script>
+<span>Messages:</span><span id="messageField"></span>
 <form onsubmit="return false;">
     <input type="text" name="message" value="Hello, World!"/>
     <input type="text" name="response" id="response" value=""/>
@@ -76,10 +120,21 @@
 </form>
 <div>
     <form onsubmit="return false;">
-        <input type="text" name="playername" value="Name"/>
-        <input type="button" value="Connect to server" onclick="connect(this.form.playername.value)"/>
+        <input type="text" name="name" value="Name"/>
+        <input type="button" value="Connect to server" onclick="connect(this.form.name.value)"/>
         <input type="button" value="Disconnect from server" onclick="disconnect()"/>
+        <input type="button" value="Create Game" onclick="newGame(this.form.name.value)"/>
 </div>
+
+<div>
+    <form onsubmit="return false;">
+        <input type="button" value="Request Players" onclick="requestPlayers()"/>
+        <input type="button" value="Request Games" onclick="requestGames()"/>
+</div>
+
+<textarea id="messages">
+</textarea>
+
 <div>
     <input type="button" value="Test REST" onclick="testREST()">
 </div>

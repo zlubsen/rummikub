@@ -3,51 +3,55 @@ package eu.lubsen.rummikub.core
 import eu.lubsen.rummikub.model.*
 import java.util.*
 
-fun joinGame(game: Game, player: Player) : Boolean {
+fun joinGame(game: Game, player: Player) : Result {
     return if (GameState.JOINING == game.gameState) {
         game.players[player.id] = player
-        true
+        Success(true)
     } else
-        false
-
+        Failure("Game is not open for joining (${game.gameState}).")
 }
 
-fun leaveGame(game: Game, player: Player) : Boolean {
+fun leaveGame(game: Game, player: Player) : Result {
+    // TODO add possibility for leaving an ongoing game
     return if (GameState.JOINING == game.gameState) {
         game.players.remove(player.id)
-        true
+        Success(true)
     } else
-        false
+        Failure("Cannot leave an ongoing game (${game.gameState}).")
 }
 
-fun startGame(game: Game) : Boolean {
+fun startGame(game: Game) : Result {
     return if (GameState.JOINING == game.gameState) {
         game.startGame()
-        true
+        Success(true)
     } else
-        false
+        Failure("Game is not in a valid state to start (${game.gameState}).")
 }
 
-fun stopGame(game: Game) : Boolean {
-    return if (GameState.JOINING == game.gameState) {
+fun stopGame(game: Game) : Result {
+    return if (GameState.STARTED == game.gameState) {
         game.stopGame()
-        true
+        Success(true)
     } else
-        false
+        Failure("Game is not in a valid state to stop (${game.gameState}).")
 }
 
-fun tryMove(game: Game, move: Move) : Boolean {
-    assert(game.gameState == GameState.STARTED)
+fun tryMove(game: Game, move: Move) : Result {
+    assert(GameState.STARTED == game.gameState)
     val allowedToPlay = playerCanPlay(move)
     val allowedToArrange = playerCanArrangeHand(move)
 
-    return when (move.moveType) {
+    // TODO improve result messaging for moves
+    return if (when (move.moveType) {
         MoveType.HAND_TO_TABLE -> allowedToPlay && playerPutsTilesOnTable(move.game, move.player, move.tilesToTable)
         MoveType.SPLIT -> allowedToArrange && splitTileSet(move)
         MoveType.MERGE -> allowedToArrange && mergeTileSets(move)
         MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(move.game, move.player)
         MoveType.END_TURN -> allowedToPlay && playerEndsTurn(move.game, move.player)
-    }
+    })
+        Success(true)
+    else
+        Failure("Invalid move.")
 }
 
 fun playerDrawsFromHeap(game: Game, player: Player) : Boolean {
