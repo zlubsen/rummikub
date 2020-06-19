@@ -1,11 +1,11 @@
 package eu.lubsen.rummikub.core
 
-sealed class Result
+sealed class Result<T>
 
-class Success<T> constructor(private val value : T) : Result() {
+class Success<T> constructor(private val value : T) : Result<T>() {
     fun result() : T = value
 }
 
-class Failure constructor(private val reason : String) : Result() {
+class Failure<T> constructor(private val reason : String) : Result<T>() {
     fun message() : String = reason
 }

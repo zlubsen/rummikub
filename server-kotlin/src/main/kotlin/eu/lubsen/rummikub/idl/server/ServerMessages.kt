@@ -2,6 +2,7 @@ package eu.lubsen.rummikub.idl.server
 
 import eu.lubsen.rummikub.model.Game
 import eu.lubsen.rummikub.model.Player
+import java.util.UUID
 
 enum class ServerMessageType {
     Connected,
@@ -15,6 +16,10 @@ enum class ServerMessageType {
     GameStopped,
     GameFinished,
     PlayedMove,
+    TilesHandToTable,
+    TilesTableToHand,
+    ArrangedTiles,
+    TurnEnded,
     MessageResponse,
     GameListResponse,
     PlayerListResponse
@@ -22,8 +27,19 @@ enum class ServerMessageType {
 
 sealed class ServerMessage constructor(val eventNumber : Long) {
     abstract val type : ServerMessageType
+    var recipients : MutableList<UUID> = mutableListOf()
 
     abstract fun toJson() : String
+
+    fun addRecipient(recipient : UUID) : ServerMessage {
+        this.recipients.add(recipient)
+        return this
+    }
+
+    fun addRecipient(recipients : Collection<UUID>) : ServerMessage {
+        this.recipients.addAll(recipients)
+        return this
+    }
 }
 
 class Connected constructor(eventNumber: Long, val player: Player) : ServerMessage(eventNumber = eventNumber) {
@@ -188,6 +204,11 @@ class PlayedMove constructor(eventNumber : Long) : ServerMessage(eventNumber = e
         """.trimIndent()
     }
 }
+
+//TilesHandToTable
+//TilesTableToHand
+//ArrangedTiles
+//TurnEnded
 
 class MessageResponse constructor(eventNumber : Long, private val message : String) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.MessageResponse

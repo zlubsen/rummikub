@@ -1,6 +1,6 @@
 package eu.lubsen.rummikub.model
 
-data class Tile (var value: TileNumber, var color : TileColor, val type : TileType) {
+data class Tile (var number: TileNumber, var color : TileColor, val type : TileType) {
 //
 //    fun setJokerValue(_value: TileNumber, _color: TileColor) {
 //        if (type == TileType.JOKER) {
@@ -18,7 +18,7 @@ data class Tile (var value: TileNumber, var color : TileColor, val type : TileTy
     override fun equals(other: Any?) : Boolean {
         return other is Tile
                 && this.type == other.type
-                && this.value == other.value
+                && this.number == other.number
                 && this.color == other.color
     }
 }

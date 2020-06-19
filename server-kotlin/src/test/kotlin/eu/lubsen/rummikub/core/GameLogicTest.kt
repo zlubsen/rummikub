@@ -7,6 +7,28 @@ import org.junit.jupiter.api.Test
 internal class GameLogicTest {
 
     @Test
+    fun gameStartTooFewPlayers() {
+        var player1 = Player("tester1")
+        var game = Game("tooFewPlayersTest", player1)
+        game.addPlayer(player1)
+        val result = startGame(game = game)
+        assertTrue(result is Failure)
+    }
+
+    @Test
+    fun gameStartTooManyPlayers() {
+        var player1 = Player("tester1")
+        var game = Game("tooManyPlayersTest", player1)
+        game.addPlayer(player1)
+        game.addPlayer(Player("tester2"))
+        game.addPlayer(Player("tester3"))
+        game.addPlayer(Player("tester4"))
+        game.addPlayer(Player("tester5"))
+        val result = startGame(game = game)
+        assertTrue(result is Failure)
+    }
+
+    @Test
     fun playerDrawsFromHeap() {
         var player1 = Player("tester1")
         var player2 = Player("tester2")
@@ -29,6 +51,7 @@ internal class GameLogicTest {
         var player1 = Player("tester1")
         var game = Game("handToTableTest", player1)
         game.addPlayer(player1)
+        game.addPlayer(Player("tester2"))
         game.startGame()
         val tileSet = getFirstTileSetFromHand(player1)
 
@@ -40,17 +63,12 @@ internal class GameLogicTest {
 
         assertTrue(game.table.containsKey(tileSet!!.id))
         assertFalse(player1.hand.containsKey(tileSet!!.id))
+        assertTrue(game.turn.tilesIntroduced.isNotEmpty())
+        assertEquals(tileSet.tiles, game.turn.tilesIntroduced)
     }
 
     private fun getFirstTileSetFromHand(player : Player) : TileSet? {
-        var tileSet : TileSet? = null
-        for (set in player.hand.values) {
-            if (tileSet == null)
-                tileSet = set
-            else
-                break
-        }
-        return tileSet
+        return player.hand.values.first()
     }
 
     @Test
@@ -108,14 +126,17 @@ internal class GameLogicTest {
         game.addPlayer(player3)
         game.startGame()
 
+        player1.hasPlayedInTurn = true
         assertEquals(player1, game.getCurrentPlayer())
 
         playerEndsTurn(game, player1)
 
+        player2.hasPlayedInTurn = true
         assertEquals(player2, game.getCurrentPlayer())
 
         playerEndsTurn(game, player2)
 
+        player3.hasPlayedInTurn = true
         assertEquals(player3, game.getCurrentPlayer())
 
         playerEndsTurn(game, player3)
@@ -191,6 +212,20 @@ internal class GameLogicTest {
     }
 
     @Test
+    fun isValidRunWithJokerAtStart() {
+        val input = "J-Bla2-Bla3-Bla4"
+        val tileSet = parseTileSet(input)
+        assertTrue(isValidRun(tileSet))
+    }
+
+    @Test
+    fun isValidRunWithJokerAtEnd() {
+        val input = "J-Bla2-Bla3-Bla4"
+        val tileSet = parseTileSet(input)
+        assertTrue(isValidRun(tileSet))
+    }
+
+    @Test
     fun allSameTileColor() {
         val input = "Bla1-Bla2-Bla3-Bla4"
         val tileSet = parseTileSet(input)
@@ -212,17 +247,17 @@ internal class GameLogicTest {
     }
 
     @Test
-    fun allSameTileValue() {
+    fun allSameTileNumber() {
         val input = "Bla4-Blu4-Red4-Yel4"
         val tileSet = parseTileSet(input)
-        assertTrue(allSameTileValue(tileSet.tiles))
+        assertTrue(allSameTileNumber(tileSet.tiles))
     }
 
     @Test
-    fun notAllSameTileValue() {
+    fun notAllSameTileNumber() {
         val input = "Bla4-Blu4-Red4-Yel5"
         val tileSet = parseTileSet(input)
-        assertFalse(allSameTileValue(tileSet.tiles))
+        assertFalse(allSameTileNumber(tileSet.tiles))
     }
 
     @Test
@@ -247,45 +282,66 @@ internal class GameLogicTest {
     }
 
     @Test
-    fun allUniqueTileValue() {
+    fun allUniqueTileNumber() {
         val input = "Bla1-Bla2-Bla3-Bla4"
         val tileSet = parseTileSet(input)
-        assertTrue(allUniqueTileValue(tileSet.tiles))
+        assertTrue(allUniqueTileNumber(tileSet.tiles))
     }
 
     @Test
-    fun allUniqueTileValueWithJoker() {
+    fun allUniqueTileNumberWithJokerAtStart() {
+        val input = "J-Bla4-Bla5"
+        val tileSet = parseTileSet(input)
+        assertTrue(allUniqueTileNumber(tileSet.tiles))
+    }
+
+    @Test
+    fun allUniqueTileNumberWithJokerAtEnd() {
         val input = "Bla4-Bla5-J"
         val tileSet = parseTileSet(input)
-        assertTrue(allUniqueTileValue(tileSet.tiles))
+        assertTrue(allUniqueTileNumber(tileSet.tiles))
     }
 
     @Test
-    fun notAllUniqueTileValue() {
+    fun notAllUniqueTileNumber() {
         val input = "Bla4-Bla5-Bla5"
         val tileSet = parseTileSet(input)
         assertFalse(allUniqueTileColor(tileSet.tiles))
     }
 
     @Test
-    fun allSequentialTileValue() {
+    fun allSequentialTileNumber() {
         val input = "Bla1-Bla2-Bla3-Bla4"
         val tileSet = parseTileSet(input)
-        assertTrue(allSequentialTileValue(tileSet.tiles))
+        assertTrue(allSequentialTileNumber(tileSet.tiles))
     }
 
     @Test
-    fun allSequentialTileValueWithJoker() {
+    fun allSequentialTileNumberWithJoker() {
         val input = "Bla1-Bla2-J-Bla4"
         val tileSet = parseTileSet(input)
-        assertTrue(allSequentialTileValue(tileSet.tiles))
+        assertTrue(allSequentialTileNumber(tileSet.tiles))
     }
 
     @Test
-    fun notAllSequentialTileValue() {
+    fun allSequentialTileNumberWithJokerAtStart() {
+        val input = "J-Bla2-Bla3-Bla4"
+        val tileSet = parseTileSet(input)
+        assertTrue(allSequentialTileNumber(tileSet.tiles))
+    }
+
+    @Test
+    fun allSequentialTileNumberWithJokerAtEnd() {
+        val input = "Bla1-Bla2-Bla3-Bla4-J"
+        val tileSet = parseTileSet(input)
+        assertTrue(allSequentialTileNumber(tileSet.tiles))
+    }
+
+    @Test
+    fun notAllSequentialTileNumber() {
         val input = "Bla1-Bla2-Bla4"
         val tileSet = parseTileSet(input)
-        assertFalse(allSequentialTileValue(tileSet.tiles))
+        assertFalse(allSequentialTileNumber(tileSet.tiles))
     }
 
     @Test
@@ -297,5 +353,61 @@ internal class GameLogicTest {
     fun tileIsRegular() {
         val tile = Tile(TileNumber.ONE, TileColor.BLACK, TileType.REGULAR)
         assertTrue(tileIsRegular(tile))
+    }
+
+    @Test
+    fun tileSetValueRun() {
+        val input = "Bla1-Bla2-Bla3"
+        val tileSet = parseTileSet(input)
+        assertEquals(1 + 2 + 3, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueRunWithJokerAtEnd() {
+        val input = "Bla1-Bla2-J"
+        val tileSet = parseTileSet(input)
+        assertEquals(1 + 2 + 3, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueRunWithJokerAtStart() {
+        val input = "J-Bla4-Bla5"
+        val tileSet = parseTileSet(input)
+        assertEquals(3 + 4 + 5, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueRunWithJokerInMiddle() {
+        val input = "Bla11-J-Bla13"
+        val tileSet = parseTileSet(input)
+        assertEquals(11 + 12 + 13, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueGroup() {
+        val input = "Bla6-Blu6-Yel6-Red6"
+        val tileSet = parseTileSet(input)
+        assertEquals(4 * 6, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueGroupWithJokerInMiddle() {
+        val input = "Bla6-Blu6-J-Red6"
+        val tileSet = parseTileSet(input)
+        assertEquals(6 + 6 + 6 + 6, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueGroupWithJokerAtStart() {
+        val input = "J-Bla6-Blu6-Red6"
+        val tileSet = parseTileSet(input)
+        assertEquals(6 + 6 + 6 + 6, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tileSetValueGroupWithJokerAtEnd() {
+        val input = "Bla6-Blu6-Red6-J"
+        val tileSet = parseTileSet(input)
+        assertEquals(6 + 6 + 6 + 6, tileSetValue(tileSet))
     }
 }

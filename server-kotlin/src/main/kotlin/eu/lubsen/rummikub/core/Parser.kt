@@ -24,7 +24,6 @@ fun parseTileSet(string: String) : TileSet {
 }
 
 fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
-//    val game : Game = lounge.games[json.takeIf { it.containsKey("gameName") }?.getString("gameName")]!!
     val game : Game = lounge.games[message.gameName]!!
     val player : Player = lounge.players[message.playerId]!!
     val moveType : MoveType = MoveType.valueOf(json.getString("moveType"))
@@ -32,7 +31,10 @@ fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
 
     when (move.moveType) {
         MoveType.HAND_TO_TABLE -> {
-            move.setPutOnTable(UUID.fromString(json.getString("tileGroupId")))
+            move.tilesToRelocate = UUID.fromString(json.getString("tileGroupId"))
+        }
+        MoveType.TABLE_TO_HAND -> {
+            move.tilesToRelocate = UUID.fromString(json.getString("tileGroupId"))
         }
         MoveType.SPLIT -> {
             move.setSplit(

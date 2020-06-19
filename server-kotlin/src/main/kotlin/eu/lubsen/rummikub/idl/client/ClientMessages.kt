@@ -3,7 +3,6 @@ package eu.lubsen.rummikub.idl.client
 import eu.lubsen.rummikub.core.parseMove
 import eu.lubsen.rummikub.model.Lounge
 import eu.lubsen.rummikub.model.Move
-import eu.lubsen.rummikub.model.MoveType
 import io.vertx.core.json.JsonObject
 import java.util.*
 

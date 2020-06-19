@@ -15,7 +15,7 @@ internal class ParserTest {
         val tileSet = parseTileSet(input)
         assertTrue(tileSet.tiles.size == 1)
         assertTrue(tileSet.tiles[0].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[0].value == TileNumber.EIGHT)
+        assertTrue(tileSet.tiles[0].number == TileNumber.EIGHT)
         assertTrue(tileSet.tiles[0].color == TileColor.BLACK)
     }
 
@@ -25,7 +25,7 @@ internal class ParserTest {
         val tileSet = parseTileSet(input)
         assertTrue(tileSet.tiles.size == 1)
         assertTrue(tileSet.tiles[0].type == TileType.JOKER)
-        assertTrue(tileSet.tiles[0].value == TileNumber.ANY)
+        assertTrue(tileSet.tiles[0].number == TileNumber.ANY)
         assertTrue(tileSet.tiles[0].color == TileColor.ANY)
     }
 
@@ -35,16 +35,16 @@ internal class ParserTest {
         val tileSet = parseTileSet(input)
         assertTrue(tileSet.tiles.size == 4)
         assertTrue(tileSet.tiles[0].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[0].value == TileNumber.FOUR)
+        assertTrue(tileSet.tiles[0].number == TileNumber.FOUR)
         assertTrue(tileSet.tiles[0].color == TileColor.BLACK)
         assertTrue(tileSet.tiles[1].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[1].value == TileNumber.FOUR)
+        assertTrue(tileSet.tiles[1].number == TileNumber.FOUR)
         assertTrue(tileSet.tiles[1].color == TileColor.BLUE)
         assertTrue(tileSet.tiles[2].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[2].value == TileNumber.FOUR)
+        assertTrue(tileSet.tiles[2].number == TileNumber.FOUR)
         assertTrue(tileSet.tiles[2].color == TileColor.RED)
         assertTrue(tileSet.tiles[3].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[3].value == TileNumber.FOUR)
+        assertTrue(tileSet.tiles[3].number == TileNumber.FOUR)
         assertTrue(tileSet.tiles[3].color == TileColor.YELLOW)
     }
 
@@ -54,13 +54,13 @@ internal class ParserTest {
         val tileSet = parseTileSet(input)
         assertTrue(tileSet.tiles.size == 3)
         assertTrue(tileSet.tiles[0].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[0].value == TileNumber.ONE)
+        assertTrue(tileSet.tiles[0].number == TileNumber.ONE)
         assertTrue(tileSet.tiles[0].color == TileColor.BLUE)
         assertTrue(tileSet.tiles[1].type == TileType.JOKER)
-        assertTrue(tileSet.tiles[1].value == TileNumber.ANY)
+        assertTrue(tileSet.tiles[1].number == TileNumber.ANY)
         assertTrue(tileSet.tiles[1].color == TileColor.ANY)
         assertTrue(tileSet.tiles[2].type == TileType.REGULAR)
-        assertTrue(tileSet.tiles[2].value == TileNumber.THREE)
+        assertTrue(tileSet.tiles[2].number == TileNumber.THREE)
         assertTrue(tileSet.tiles[2].color == TileColor.BLUE)
     }
 }

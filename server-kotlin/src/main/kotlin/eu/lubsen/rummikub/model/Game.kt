@@ -12,6 +12,7 @@ class Game constructor(val name: String, val owner : Player) {
     var heap : MutableList<Tile> = mutableListOf()
 
     var currentPlayerIndex : Int = 0
+    lateinit var turn : Turn
 
     var tileSets : MutableMap<UUID, TileSet> = mutableMapOf()
 
@@ -44,6 +45,7 @@ class Game constructor(val name: String, val owner : Player) {
     fun startGame() {
         assert(gameState == GameState.JOINING)
         initGame()
+        setTurn()
         gameState = GameState.STARTED
     }
 
@@ -79,6 +81,10 @@ class Game constructor(val name: String, val owner : Player) {
 
     fun stopGame() {
         gameState = GameState.FINISHED
+    }
+
+    fun setTurn() {
+        turn = Turn(table = table.values.toList(), playerHand = getCurrentPlayer().hand.values.toList())
     }
 
     fun toJson() : JsonObject {

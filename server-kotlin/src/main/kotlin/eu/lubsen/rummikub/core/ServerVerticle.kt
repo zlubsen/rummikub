@@ -58,36 +58,41 @@ class ServerVerticle : AbstractVerticle() {
                     playerId = id
             }
             if (playerId != null) {
-                clientSockets.remove(playerId!!)
-                lounge.playerDisconnects(lounge.players[playerId!!]!!)
+                clientSockets.remove(key = playerId!!)
+                playerDisconnects(lounge = lounge, player = lounge.players[playerId!!]!!)
             }
         }
         // add the player
-        val player = Player(userName)
+        val player = Player(playerName = userName)
         clientSockets[player.id] = webSocket
-        lounge.players[player.id] = player
+        playerConnects(lounge = lounge, player = player)
 
-        val response = Connected(0, player)
-        clientSockets[player.id]!!.writeTextMessage(response.toJson())
+        sendMessage(
+            Connected(eventNumber = 0, player = player)
+                .addRecipient(recipient = player.id))
+        sendMessage(
+            PlayerConnected(eventNumber = 0, player = player)
+                .addRecipient(recipients = lounge.players.keys)
+        )
     }
 
     private fun receiveMessageHandler(buffer : Buffer) =
-        receiveMessageJson(JsonObject(buffer.getString(0, buffer.length())))
+        receiveMessageJson(json = JsonObject(buffer.getString(0, buffer.length())))
 
     private fun receiveMessageJson(json : JsonObject) {
-        val message = when(ClientMessageType.valueOf(json.getString("messageType"))) {
-            ClientMessageType.CreateGame -> CreateGame(json)
-            ClientMessageType.RemoveGame -> RemoveGame(json)
-            ClientMessageType.JoinGame -> JoinGame(json)
-            ClientMessageType.LeaveGame -> LeaveGame(json)
-            ClientMessageType.StartGame -> StartGame(json)
-            ClientMessageType.StopGame -> StopGame(json)
-            ClientMessageType.RequestGameList -> RequestGameList(json)
-            ClientMessageType.RequestPlayerList -> RequestPlayerList(json)
-            ClientMessageType.PlayerMove -> PlayerMove(json, lounge)
+        val message = when(ClientMessageType.valueOf(value = json.getString("messageType"))) {
+            ClientMessageType.CreateGame -> CreateGame(json = json)
+            ClientMessageType.RemoveGame -> RemoveGame(json = json)
+            ClientMessageType.JoinGame -> JoinGame(json = json)
+            ClientMessageType.LeaveGame -> LeaveGame(json = json)
+            ClientMessageType.StartGame -> StartGame(json = json)
+            ClientMessageType.StopGame -> StopGame(json = json)
+            ClientMessageType.RequestGameList -> RequestGameList(json = json)
+            ClientMessageType.RequestPlayerList -> RequestPlayerList(json = json)
+            ClientMessageType.PlayerMove -> PlayerMove(json = json, lounge = lounge)
         }
 
-        handleClientMessage(message)
+        handleClientMessage(message = message)
     }
 
     private fun handleClientMessage(message : ClientMessage) {
@@ -97,44 +102,31 @@ class ServerVerticle : AbstractVerticle() {
                 is RemoveGame -> handleRemoveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is JoinGame -> handleJoinGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is LeaveGame -> handleLeaveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
-                is RequestGameList -> respondGameList(requesterId = message.playerId)
-                is RequestPlayerList -> respondPlayerList(requesterId = message.playerId)
+                is RequestGameList -> handleRequestGameList(lounge = lounge, playerId = message.playerId)
+                is RequestPlayerList -> handleRequestPlayerList(lounge = lounge, playerId = message.playerId)
                 is StartGame -> handleStartGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is StopGame -> handleStopGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is PlayerMove -> handlePlayerMove(lounge = lounge, gameName = message.gameName, move = message.move)
             }
-            // TODO: figure out how to collect recipients and the message; as a Pair in a Result, or in the ServerMessage object
             when(result) {
-                is Success<*> -> {  }
-                is Failure -> respondMessage(
-                    recipients = listOf(message.playerId),
-                    message = MessageResponse(eventNumber = 0, message = result.message()))
+                is Success<ServerMessage> -> { sendMessage(message = result.result()) }
+                is Failure<*> -> sendMessage(
+                        message = MessageResponse(
+                            eventNumber = 0,
+                            message = result.message()
+                        ).addRecipient(message.playerId))
             }
         } else
-            respondMessage(
-                recipients = listOf(message.playerId),
-                message = MessageResponse(eventNumber = 0, message = "Invalid player ID."))
+            sendMessage(
+                message = MessageResponse(
+                    eventNumber = 0,
+                    message = "Invalid player ID.").addRecipient(message.playerId))
     }
 
-    private fun respondMessage(recipients : List<UUID>, message : ServerMessage) {
-        for (recipient in recipients) {
+    private fun sendMessage(message : ServerMessage) {
+        for (recipient in message.recipients) {
             val channel = clientSockets[recipient]
             channel?.writeTextMessage(message.toJson())
         }
-    }
-
-    private fun respondGameList(requesterId : UUID) : Result {
-        val message = GameListResponse(eventNumber = 0, games = lounge.listGames())
-
-        val receiver = clientSockets[requesterId]
-        receiver?.writeTextMessage(message.toJson())
-        return Success(true)
-    }
-
-    private fun respondPlayerList(requesterId : UUID) {
-        val message = PlayerListResponse(eventNumber = 0, players = lounge.listPlayers())
-
-        val receiver = clientSockets[requesterId]
-        receiver?.writeTextMessage(message.toJson())
     }
 }
