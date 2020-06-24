@@ -2,12 +2,21 @@ package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.idl.server.*
 import eu.lubsen.rummikub.model.*
+import eu.lubsen.rummikub.util.Failure
+import eu.lubsen.rummikub.util.Result
+import eu.lubsen.rummikub.util.Success
 import java.util.UUID
 
 fun joinGame(game: Game, player: Player) : Result<ServerMessage> {
     return if (GameState.JOINING == game.gameState) {
         game.players[player.id] = player
-        Success(PlayerJoinedGame(eventNumber = 0, game = game, player = player))
+        Success(
+            PlayerJoinedGame(
+                eventNumber = 0,
+                game = game,
+                player = player
+            )
+        )
     } else
         Failure("Game is not open for joining (${game.gameState}).")
 }
@@ -19,7 +28,8 @@ fun leaveGame(game: Game, player: Player) : Result<ServerMessage> {
         Success(
             PlayerLeftGame(eventNumber = 0, game = game, player = player)
                 .addRecipient(recipients = game.players.keys)
-                .addRecipient(recipient = player.id))
+                .addRecipient(recipient = player.id)
+        )
     } else
         Failure("Cannot leave an ongoing game (${game.gameState}).")
 }
@@ -33,15 +43,18 @@ fun startGame(game: Game) : Result<ServerMessage> {
         game.startGame()
         Success(
             GameStarted(eventNumber = 0, game = game)
-                .addRecipient(recipients = game.players.keys))
+                .addRecipient(recipients = game.players.keys)
+        )
     }
 }
 
 fun stopGame(game: Game) : Result<ServerMessage> {
     return if (GameState.STARTED == game.gameState) {
         game.stopGame()
-        Success(GameStopped(eventNumber = 0, game = game)
-            .addRecipient(recipients = game.players.keys))
+        Success(
+            GameStopped(eventNumber = 0, game = game)
+                .addRecipient(recipients = game.players.keys)
+        )
     } else
         Failure("Game is not in a valid state to stop (${game.gameState}).")
 }
@@ -54,30 +67,56 @@ fun tryMove(move: Move) : Result<ServerMessage> {
 
     if (playedInitial) {
         // TODO improve result messaging for moves
-        return if (when (move.moveType) {
-                MoveType.HAND_TO_TABLE -> allowedToPlay && playerPutsTilesOnTable(
+        val result = when (move.moveType) {
+                MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = playerPutsTilesOnTable(
                     game = move.game,
                     player = move.player,
                     tileSetId = move.tilesToRelocate
-                )
-                MoveType.TABLE_TO_HAND -> allowedToPlay && playerPutsTilesInHand(
+                ))
+                MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(
                     game = move.game,
                     player = move.player,
                     tileSetId = move.tilesToRelocate
-                )
-                MoveType.SPLIT -> allowedToArrange && splitTileSet(move = move)
-                MoveType.MERGE -> allowedToArrange && mergeTileSets(move = move)
-                MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(game = move.game, player = move.player)
-                MoveType.END_TURN -> allowedToPlay && playerEndsTurn(game = move.game, player = move.player)
+                ))
+                MoveType.SPLIT -> allowedToArrange.chain(next = splitTileSet(move = move))
+                MoveType.MERGE -> allowedToArrange.chain(next = mergeTileSets(move = move))
+                MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
+                MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsTurn(game = move.game, player = move.player))
             }
-        )
         // TODO Create proper move response message
-            Success(
-                MessageResponse(eventNumber = 0, message = "todo")
-                    .addRecipient(recipients = move.game.players.keys)
-            )
-        else
-            Failure("Invalid move.")
+        return when(result) {
+            is Success -> when(result.result()) {
+                is TilesMerged -> {
+                    val message : ServerMessage = PlayedTileSetsMerged(
+                        eventNumber = 0,
+                        move = result.result() as TilesMerged)
+                    when((result.result() as TilesMerged).location) {
+                        MoveLocation.HAND -> message.addRecipient(move.player.id)
+                        MoveLocation.TABLE -> message.addRecipient(move.game.players.keys)
+                    }
+                    Success(message)
+                }
+                is TilesSplit -> {
+                    val message : ServerMessage = PlayedTileSetSplit(
+                        eventNumber = 0,
+                        move = result.result() as TilesSplit)
+                    when((result.result() as TilesSplit).location) {
+                        MoveLocation.HAND -> message.addRecipient(move.player.id)
+                        MoveLocation.TABLE -> message.addRecipient(move.game.players.keys)
+                    }
+                    Success(message)
+                }
+                TurnEnded -> {
+                    val message : ServerMessage = PlayedTurnEnded(
+                        eventNumber = 0,
+                        move = result.result() as TurnEnded
+                    )
+                    Success(message)
+                }
+                is MoveOk -> TODO()
+            }
+            is Failure -> Failure(reason ="Invalid move.")
+        }
     } else
         return tryInitialPlayMove(move = move)
 }
@@ -88,30 +127,26 @@ fun tryInitialPlayMove(move: Move) : Result<ServerMessage> {
 
     val result = when (move.moveType) {
         MoveType.HAND_TO_TABLE -> playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
-        MoveType.TABLE_TO_HAND -> allowedToPlay && playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
-        MoveType.SPLIT -> arrangeHand && splitTileSet(move = move)
-        MoveType.MERGE -> arrangeHand && mergeTileSets(move = move)
-        MoveType.TAKE_FROM_HEAP -> allowedToPlay && playerDrawsFromHeap(game = move.game, player = move.player)
-        MoveType.END_TURN -> allowedToPlay && playerEndsInitialTurn(game = move.game)
+        MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
+        MoveType.SPLIT -> arrangeHand.chain(next = splitTileSet(move = move))
+        MoveType.MERGE -> arrangeHand.chain(next = mergeTileSets(move = move))
+        MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
+        MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsInitialTurn(game = move.game))
     }
-    when (result) {
-        is Success<Boolean> -> {}
-        is Success<UUID> -> {}
-        is Failure -> {}
-    }
-        Success(
+    return when (result.isSuccess()) {
+        true -> Success(
             MessageResponse(eventNumber = 0, message = "todo")
                 .addRecipient(recipients = move.game.players.keys)
         )
-    else
-        Failure("Invalid move.")
+        false -> Failure(reason ="Invalid move.")
+    }
 }
 
 fun gameHasValidNoOfPlayers(game: Game) : Boolean {
     return game.players.size in 2..4
 }
 
-fun playerDrawsFromHeap(game: Game, player: Player) : Boolean {
+fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
     return if (game.heap.isNotEmpty()) {
         endAndResetTurn(game = game)
 
@@ -120,14 +155,16 @@ fun playerDrawsFromHeap(game: Game, player: Player) : Boolean {
         val tileSet = player.tileToHand(tile = tile)
         game.tileSets[tileSet.id] = tileSet
 
-        true
+        Success(value = MoveOk(
+            tileSet = tileSet,
+            newLocation = MoveLocation.HAND))
     } else
-        false
+        Success(value = TurnEnded) // heap is empty
 }
 
-fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Boolean {
+fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Result<MoveResult> {
     if (!player.hand.containsKey(key = tileSetId))
-        return false
+        return Failure(reason = "TileSet is not in player's hand.")
 
     val tileSet = player.hand[tileSetId]!!
     player.hand.remove(key = tileSetId)
@@ -135,26 +172,30 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Boole
     game.table[tileSet.id] = tileSet
     tileSet.tiles.filter { tileIsRegular(it) }.forEach { game.turn.tilesIntroduced.add(element = it) }
 
-    return true
+    return Success(value = MoveOk(
+        tileSet = tileSet,
+        newLocation = MoveLocation.TABLE))
 }
 
 // TODO test function
-fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Boolean {
+fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<MoveResult> {
     if (!game.table.containsKey(key = tileSetId))
-        return false
+        return Failure(reason = "TileSet is not on table.")
 
     val tileSet = game.table[tileSetId]!!
     val playedIntersect = tileSet.tiles.filter { tileIsRegular(it) }.intersect(game.turn.tilesIntroduced)
     return if (playedIntersect.size == tileSet.tiles.size)
-        false // tileSet contains tiles not played in this move
+        Failure(reason = "Not all tiles were in player's hand: ${playedIntersect.joinToString { ", " }}") // tileSet contains tiles not played in this move
     else {
         game.table.remove(tileSet.id)
         player.hand[tileSetId] = tileSet
-        true
+        Success(value = MoveOk(
+            tileSet = tileSet,
+            newLocation = MoveLocation.HAND))
     }
 }
 
-fun splitTileSet(move : Move) : Boolean {
+fun splitTileSet(move : Move) : Result<MoveResult> {
     val tileSetId = move.splitSetId
     val index : Int = move.splitIndex
 
@@ -164,70 +205,79 @@ fun splitTileSet(move : Move) : Boolean {
     }
 
     if (!location.containsKey(key = tileSetId))
-        return false
+        return Failure(reason = "TileSet not found in ${move.moveLocation}.")
 
-    val newSets = location[tileSetId]?.let { split(tileSet = it, index = index) }
-    if (newSets != null && newSets.size != 2) {
-        return false
+    val newSets = split(tileSet = location[tileSetId]!!, index = index)
+    if (newSets.size != 2) {
+        return Failure(reason = "Split resulted in a something else than 2 sets.")
     }
 
-    for (group in newSets!!) {
-        location[group.id] = group
-        move.game.tileSets[group.id] = group
+    newSets.forEach {
+        location[it.id] = it
+        move.game.tileSets[it.id] = it
     }
+
     location.remove(key = tileSetId)
     move.game.tileSets.remove(key = tileSetId)
 
-    return true
+    return Success(value = TilesSplit(
+        leftSet = newSets[0],
+        rightSet = newSets[1],
+        originalId = tileSetId,
+        location = move.moveLocation))
 }
 
-fun mergeTileSets(move: Move) : Boolean {
+fun mergeTileSets(move: Move) : Result<MoveResult> {
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
         MoveLocation.HAND -> move.game.getCurrentPlayer().hand
     }
-    var newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(left = it, right = it1) } }
+    val newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(left = it, right = it1) } }
     move.game.tileSets.remove(move.leftMergeId)
     move.game.tileSets.remove(move.rightMergeId)
     move.game.tileSets[newSet!!.id] = newSet
 
-    return true
+    return Success(value = TilesMerged(
+        leftId = move.leftMergeId,
+        rightId = move.rightMergeId,
+        mergedSet = newSet,
+        location = move.moveLocation))
 }
 
 fun split(tileSet : TileSet, index : Int) : List<TileSet> {
     if (index == 0 || index == tileSet.tiles.size)
         return listOf(tileSet)
-    var head = TileSet(tiles = tileSet.tiles.subList(0, index))
-    var tail = TileSet(tiles = tileSet.tiles.subList(index, tileSet.tiles.size))
+    val head = TileSet(tiles = tileSet.tiles.subList(0, index))
+    val tail = TileSet(tiles = tileSet.tiles.subList(index, tileSet.tiles.size))
     return listOf(head, tail)
 }
 
 fun merge(left: TileSet, right : TileSet) : TileSet {
-    var tiles = mutableListOf<Tile>()
+    val tiles = mutableListOf<Tile>()
     tiles.addAll(elements = left.tiles)
     tiles.addAll(elements = right.tiles)
     return TileSet(tiles)
 }
 
-fun playerEndsTurn(game: Game, player: Player) : Boolean {
+fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
     // check if the player played tiles
     if (!playerHasInitialPlay(player = player)
         && !playerHasPlayedInTurn(player = player))
-        return false
+        return Failure(reason = "Player did not play any tiles or met initial play value.")
 
     if(!hasPlayerWon(game = game, player = player)
         && playerHasPlayedInTurn(player = player)
         && tableIsValid(game = game))
         endTurn(game = game)
-    return true
+    return Success(value = TurnEnded)
 }
 
-fun playerEndsInitialTurn(game: Game) : Boolean {
+fun playerEndsInitialTurn(game: Game) : Result<MoveResult> {
     return if (tileListValue(game.turn.tilesIntroduced) > 30 && tableIsValid(game = game)) {
         endTurn(game = game)
-        true
+        Success(value = TurnEnded)
     } else
-        false
+        Failure(reason = "Player does not meet initial play value, or the table contains invalid sets.")
 }
 
 fun endAndResetTurn(game: Game) {
@@ -259,19 +309,28 @@ fun hasPlayerWon(game: Game, player: Player) : Boolean {
     return allValid && playerHandEmpty
 }
 
-fun playerCanPlay(move: Move) : Boolean {
-    return playerIsInGame(game = move.game, player = move.player)
-            && isCurrentPlayer(game = move.game, player = move.player)
+fun playerCanPlay(move: Move) : Result<Boolean> {
+    return if (playerIsInGame(game = move.game, player = move.player)
+            && isCurrentPlayer(game = move.game, player = move.player))
+        Success(value = true)
+    else
+        Failure(reason = "Player is not the current player (or not in the game).")
 }
 
-fun playerCanArrange(move: Move) : Boolean {
-    return playerCanArrangeHand(move = move)
-            || isCurrentPlayer(game = move.game, player = move.player)
+fun playerCanArrange(move: Move) : Result<Boolean> {
+    return if( playerCanArrangeHand(move = move).isSuccess()
+            || isCurrentPlayer(game = move.game, player = move.player))
+        Success(value = true)
+    else
+        Failure("Player is not the current player.")
 }
 
-fun playerCanArrangeHand(move: Move) : Boolean {
-    return playerIsInGame(game = move.game, player = move.player)
-            && (move.moveLocation == MoveLocation.HAND)
+fun playerCanArrangeHand(move: Move) : Result<Boolean> {
+    return if (playerIsInGame(game = move.game, player = move.player)
+            && (move.moveLocation == MoveLocation.HAND))
+        Success(value = true)
+    else
+        Failure(reason = "Player cannot arrange table when not the current player.")
 }
 
 fun playerIsInGame(game: Game, player : Player) : Boolean {
@@ -293,7 +352,7 @@ fun playerHasPlayedInTurn(player: Player) : Boolean {
 fun tableIsValid(game: Game) : Boolean {
     return game.table.values
         .map { tileSet ->  isValidTileSet(tileSet) }
-        .reduce { sum, element -> sum && element }
+        .fold(true) { sum, element -> sum && element }
 }
 
 fun findTileSet(game : Game, id : UUID) : TileSet? {

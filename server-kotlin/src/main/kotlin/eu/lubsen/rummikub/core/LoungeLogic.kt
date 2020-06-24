@@ -6,6 +6,9 @@ import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.model.Game
 import eu.lubsen.rummikub.model.Lounge
 import eu.lubsen.rummikub.model.Player
+import eu.lubsen.rummikub.util.Failure
+import eu.lubsen.rummikub.util.Result
+import eu.lubsen.rummikub.util.Success
 import java.util.UUID
 
 fun playerIsOwner(lounge : Lounge, gameName : String, playerId : UUID) : Boolean {
@@ -38,8 +41,10 @@ fun createGame(lounge : Lounge, gameName : String, ownerId : UUID) : Result<Serv
     return if (!lounge.games.containsKey(key = gameName)) {
         val game = Game(gameName, lounge.players[ownerId]!!)
         lounge.games[gameName] = game
-        Success(GameCreated(eventNumber = 0, game = game)
-            .addRecipient(recipients = lounge.players.keys))
+        Success(
+            GameCreated(eventNumber = 0, game = game)
+                .addRecipient(recipients = lounge.players.keys)
+        )
     } else {
         Failure(reason = "Cannot create game with '$gameName', name already exists.")
     }
@@ -48,8 +53,10 @@ fun createGame(lounge : Lounge, gameName : String, ownerId : UUID) : Result<Serv
 fun removeGame(lounge : Lounge, gameName : String) : Result<ServerMessage> {
     return if (isValidGameName(lounge = lounge, gameName = gameName)) {
         val game = lounge.games.remove(key = gameName)!!
-        Success(GameRemoved(eventNumber = 0, game = game)
-            .addRecipient(recipients = lounge.players.keys))
+        Success(
+            GameRemoved(eventNumber = 0, game = game)
+                .addRecipient(recipients = lounge.players.keys)
+        )
     }
     else {
         Failure(reason = "Cannot remove game '$gameName', name does not exist.")

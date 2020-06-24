@@ -1,6 +1,7 @@
 package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.model.*
+import eu.lubsen.rummikub.util.Failure
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -40,7 +41,7 @@ internal class GameLogicTest {
 
         assertEquals(14, player1.hand.size)
         assertEquals(14, player2.hand.size)
-        assertTrue(playerDrawsFromHeap(game, player1))
+        assertTrue(playerDrawsFromHeap(game, player1).isSuccess())
         assertEquals(15, player1.hand.size)
         assertEquals(14, player2.hand.size)
         assertEquals(heapSize - 1, game.heap.size)

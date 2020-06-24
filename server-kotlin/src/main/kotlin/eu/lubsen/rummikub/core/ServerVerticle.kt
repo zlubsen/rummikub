@@ -3,6 +3,8 @@ package eu.lubsen.rummikub.core
 import eu.lubsen.rummikub.idl.client.*
 import eu.lubsen.rummikub.idl.server.*
 import eu.lubsen.rummikub.model.*
+import eu.lubsen.rummikub.util.Failure
+import eu.lubsen.rummikub.util.Success
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
 import io.vertx.core.buffer.Buffer

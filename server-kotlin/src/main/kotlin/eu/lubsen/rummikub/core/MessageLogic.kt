@@ -5,6 +5,9 @@ import eu.lubsen.rummikub.idl.server.PlayerListResponse
 import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.model.Lounge
 import eu.lubsen.rummikub.model.Move
+import eu.lubsen.rummikub.util.Failure
+import eu.lubsen.rummikub.util.Result
+import eu.lubsen.rummikub.util.Success
 import java.util.*
 
 fun handleCreateGame(lounge : Lounge, gameName : String, ownerId : UUID) : Result<ServerMessage> {
@@ -59,12 +62,16 @@ fun handleRequestGameList(lounge : Lounge, playerId : UUID) : Result<ServerMessa
     return Success(
         GameListResponse(
             eventNumber = 0,
-            games = lounge.listGames()).addRecipient(playerId))
+            games = lounge.listGames()
+        ).addRecipient(playerId)
+    )
 }
 
 fun handleRequestPlayerList(lounge : Lounge, playerId : UUID) : Result<ServerMessage> {
     return Success(
         PlayerListResponse(
             eventNumber = 0,
-            players = lounge.listPlayers()).addRecipient(playerId))
+            players = lounge.listPlayers()
+        ).addRecipient(playerId)
+    )
 }

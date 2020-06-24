@@ -12,7 +12,7 @@ class Game constructor(val name: String, val owner : Player) {
     var heap : MutableList<Tile> = mutableListOf()
 
     var currentPlayerIndex : Int = 0
-    lateinit var turn : Turn
+    var turn : Turn = Turn(table = listOf(), playerHand = listOf())
 
     var tileSets : MutableMap<UUID, TileSet> = mutableMapOf()
 
