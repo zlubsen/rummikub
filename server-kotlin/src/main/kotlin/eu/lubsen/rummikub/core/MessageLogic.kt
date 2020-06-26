@@ -1,6 +1,7 @@
 package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.idl.server.GameListResponse
+import eu.lubsen.rummikub.idl.server.MessageResponse
 import eu.lubsen.rummikub.idl.server.PlayerListResponse
 import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.model.Lounge
@@ -53,7 +54,7 @@ fun handleStopGame(lounge : Lounge, gameName : String, playerId : UUID) : Result
 
 fun handlePlayerMove(lounge : Lounge, gameName : String, move : Move) : Result<ServerMessage> {
     return if (isValidGameName(lounge = lounge, gameName = gameName))
-        tryMove(move = move)
+        moveResponse(game = lounge.games[gameName]!!, result = tryMove(move = move))
     else
         Failure("No game with name '$gameName' exists.")
 }

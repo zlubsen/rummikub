@@ -9,8 +9,8 @@ internal class GameLogicTest {
 
     @Test
     fun gameStartTooFewPlayers() {
-        var player1 = Player("tester1")
-        var game = Game("tooFewPlayersTest", player1)
+        val player1 = Player("tester1")
+        val game = Game("tooFewPlayersTest", player1)
         game.addPlayer(player1)
         val result = startGame(game = game)
         assertTrue(result is Failure)
@@ -18,8 +18,8 @@ internal class GameLogicTest {
 
     @Test
     fun gameStartTooManyPlayers() {
-        var player1 = Player("tester1")
-        var game = Game("tooManyPlayersTest", player1)
+        val player1 = Player("tester1")
+        val game = Game("tooManyPlayersTest", player1)
         game.addPlayer(player1)
         game.addPlayer(Player("tester2"))
         game.addPlayer(Player("tester3"))
@@ -31,13 +31,13 @@ internal class GameLogicTest {
 
     @Test
     fun playerDrawsFromHeap() {
-        var player1 = Player("tester1")
-        var player2 = Player("tester2")
-        var game = Game("drawTest", player1)
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("drawTest", player1)
         game.addPlayer(player1)
         game.addPlayer(player2)
         game.startGame()
-        var heapSize = game.heap.size
+        val heapSize = game.heap.size
 
         assertEquals(14, player1.hand.size)
         assertEquals(14, player2.hand.size)
@@ -49,27 +49,23 @@ internal class GameLogicTest {
 
     @Test
     fun playerPutsTilesOnTable() {
-        var player1 = Player("tester1")
-        var game = Game("handToTableTest", player1)
+        val player1 = Player("tester1")
+        val game = Game("handToTableTest", player1)
         game.addPlayer(player1)
         game.addPlayer(Player("tester2"))
         game.startGame()
-        val tileSet = getFirstTileSetFromHand(player1)
+        val tileSet = getFirstRegularTileSetFromHand(player1)
 
         assertNotNull(tileSet)
         assertTrue(game.table.isEmpty())
         assertTrue(player1.hand.containsKey(tileSet!!.id))
 
-        playerPutsTilesOnTable(game, player1, tileSet!!.id)
+        playerPutsTilesOnTable(game, player1, tileSet.id)
 
-        assertTrue(game.table.containsKey(tileSet!!.id))
-        assertFalse(player1.hand.containsKey(tileSet!!.id))
+        assertTrue(game.table.containsKey(tileSet.id))
+        assertFalse(player1.hand.containsKey(tileSet.id))
         assertTrue(game.turn.tilesIntroduced.isNotEmpty())
         assertEquals(tileSet.tiles, game.turn.tilesIntroduced)
-    }
-
-    private fun getFirstTileSetFromHand(player : Player) : TileSet? {
-        return player.hand.values.first()
     }
 
     @Test
@@ -115,13 +111,13 @@ internal class GameLogicTest {
 
     @Test
     fun playerEndsTurn() {
-        var player1 = Player("tester1")
+        val player1 = Player("tester1")
         player1.initialPlay = true
-        var player2 = Player("tester2")
+        val player2 = Player("tester2")
         player2.initialPlay = true
-        var player3 = Player("tester3")
+        val player3 = Player("tester3")
         player3.initialPlay = true
-        var game = Game("endTurnTest", player1)
+        val game = Game("endTurnTest", player1)
         game.addPlayer(player1)
         game.addPlayer(player2)
         game.addPlayer(player3)

@@ -112,7 +112,7 @@ class ServerVerticle : AbstractVerticle() {
             }
             when(result) {
                 is Success<ServerMessage> -> { sendMessage(message = result.result()) }
-                is Failure<*> -> sendMessage(
+                is Failure -> sendMessage(
                         message = MessageResponse(
                             eventNumber = 0,
                             message = result.message()

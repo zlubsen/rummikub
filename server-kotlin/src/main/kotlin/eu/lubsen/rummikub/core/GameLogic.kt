@@ -59,15 +59,14 @@ fun stopGame(game: Game) : Result<ServerMessage> {
         Failure("Game is not in a valid state to stop (${game.gameState}).")
 }
 
-fun tryMove(move: Move) : Result<ServerMessage> {
+fun tryMove(move: Move) : Result<MoveResult> {
     assert(GameState.STARTED == move.game.gameState)
     val allowedToPlay = playerCanPlay(move = move)
     val allowedToArrange = playerCanArrange(move = move)
     val playedInitial = playerHasInitialPlay(player = move.player)
 
     if (playedInitial) {
-        // TODO improve result messaging for moves
-        val result = when (move.moveType) {
+        return when (move.moveType) {
                 MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = playerPutsTilesOnTable(
                     game = move.game,
                     player = move.player,
@@ -83,49 +82,15 @@ fun tryMove(move: Move) : Result<ServerMessage> {
                 MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
                 MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsTurn(game = move.game, player = move.player))
             }
-        // TODO Create proper move response message
-        return when(result) {
-            is Success -> when(result.result()) {
-                is TilesMerged -> {
-                    val message : ServerMessage = PlayedTileSetsMerged(
-                        eventNumber = 0,
-                        move = result.result() as TilesMerged)
-                    when((result.result() as TilesMerged).location) {
-                        MoveLocation.HAND -> message.addRecipient(move.player.id)
-                        MoveLocation.TABLE -> message.addRecipient(move.game.players.keys)
-                    }
-                    Success(message)
-                }
-                is TilesSplit -> {
-                    val message : ServerMessage = PlayedTileSetSplit(
-                        eventNumber = 0,
-                        move = result.result() as TilesSplit)
-                    when((result.result() as TilesSplit).location) {
-                        MoveLocation.HAND -> message.addRecipient(move.player.id)
-                        MoveLocation.TABLE -> message.addRecipient(move.game.players.keys)
-                    }
-                    Success(message)
-                }
-                TurnEnded -> {
-                    val message : ServerMessage = PlayedTurnEnded(
-                        eventNumber = 0,
-                        move = result.result() as TurnEnded
-                    )
-                    Success(message)
-                }
-                is MoveOk -> TODO()
-            }
-            is Failure -> Failure(reason ="Invalid move.")
-        }
     } else
         return tryInitialPlayMove(move = move)
 }
 
-fun tryInitialPlayMove(move: Move) : Result<ServerMessage> {
+fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
     val allowedToPlay = playerCanPlay(move = move)
     val arrangeHand = playerCanArrangeHand(move = move)
 
-    val result = when (move.moveType) {
+    return when (move.moveType) {
         MoveType.HAND_TO_TABLE -> playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
         MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
         MoveType.SPLIT -> arrangeHand.chain(next = splitTileSet(move = move))
@@ -133,12 +98,55 @@ fun tryInitialPlayMove(move: Move) : Result<ServerMessage> {
         MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
         MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsInitialTurn(game = move.game))
     }
-    return when (result.isSuccess()) {
-        true -> Success(
-            MessageResponse(eventNumber = 0, message = "todo")
-                .addRecipient(recipients = move.game.players.keys)
-        )
-        false -> Failure(reason ="Invalid move.")
+}
+
+fun moveResponse(game: Game, result: Result<MoveResult>) : Result<ServerMessage> {
+    return when(result) {
+        is Success -> when(result.result()) {
+            is TilesMerged -> {
+                val message : ServerMessage = PlayedTileSetsMerged(
+                    eventNumber = 0,
+                    move = result.result() as TilesMerged)
+                when((result.result() as TilesMerged).location) {
+                    MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
+                    MoveLocation.TABLE -> message.addRecipient(game.players.keys)
+                }
+                Success(message)
+            }
+            is TilesSplit -> {
+                val message : ServerMessage = PlayedTileSetSplit(
+                    eventNumber = 0,
+                    move = result.result() as TilesSplit)
+                when((result.result() as TilesSplit).location) {
+                    MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
+                    MoveLocation.TABLE -> message.addRecipient(game.players.keys)
+                }
+                Success(message)
+            }
+            is TurnEnded -> {
+                val message : ServerMessage = PlayedTurnEnded(
+                    eventNumber = 0,
+                    move = result.result() as TurnEnded
+                )
+                Success(message)
+            }
+            is MoveOk -> {
+                val message : ServerMessage = when ((result.result() as MoveOk).type) {
+                    MoveType.TAKE_FROM_HEAP -> {
+                        PlayedTookFromHeap(eventNumber = 0, move = result.result() as MoveOk)
+                    }
+                    MoveType.TABLE_TO_HAND -> {
+                        PlayedTilesTableToHand(eventNumber = 0, move = result.result() as MoveOk)
+                    }
+                    MoveType.HAND_TO_TABLE -> {
+                        PlayedTilesHandToTable(eventNumber = 0, move = result.result() as MoveOk)
+                    }
+                    else -> {MessageResponse(eventNumber = 0, message = "This should not be possible...")}
+                }
+                Success(message)
+            }
+        }
+        is Failure -> Failure(reason = result.message())
     }
 }
 
@@ -156,6 +164,7 @@ fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
         game.tileSets[tileSet.id] = tileSet
 
         Success(value = MoveOk(
+            type = MoveType.TAKE_FROM_HEAP,
             tileSet = tileSet,
             newLocation = MoveLocation.HAND))
     } else
@@ -173,6 +182,7 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Resul
     tileSet.tiles.filter { tileIsRegular(it) }.forEach { game.turn.tilesIntroduced.add(element = it) }
 
     return Success(value = MoveOk(
+        type = MoveType.HAND_TO_TABLE,
         tileSet = tileSet,
         newLocation = MoveLocation.TABLE))
 }
@@ -190,6 +200,7 @@ fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<
         game.table.remove(tileSet.id)
         player.hand[tileSetId] = tileSet
         Success(value = MoveOk(
+            type = MoveType.TABLE_TO_HAND,
             tileSet = tileSet,
             newLocation = MoveLocation.HAND))
     }
@@ -221,6 +232,7 @@ fun splitTileSet(move : Move) : Result<MoveResult> {
     move.game.tileSets.remove(key = tileSetId)
 
     return Success(value = TilesSplit(
+        type = MoveType.SPLIT,
         leftSet = newSets[0],
         rightSet = newSets[1],
         originalId = tileSetId,
@@ -238,6 +250,7 @@ fun mergeTileSets(move: Move) : Result<MoveResult> {
     move.game.tileSets[newSet!!.id] = newSet
 
     return Success(value = TilesMerged(
+        type = MoveType.MERGE,
         leftId = move.leftMergeId,
         rightId = move.rightMergeId,
         mergedSet = newSet,

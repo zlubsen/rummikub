@@ -344,7 +344,7 @@ private fun tileSetToJson(tileSet: TileSet) : String {
                 separator = ",",
                 prefix = "[",
                 postfix = "]")
-            { tile -> """${tile.color}-${tile.number}""" }}
+            { tile -> """"${tile.color}-${tile.number}"""" }}
         }
     """.trimIndent()
 }
