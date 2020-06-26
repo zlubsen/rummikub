@@ -249,12 +249,15 @@ fun mergeTileSets(move: Move) : Result<MoveResult> {
     move.game.tileSets.remove(move.rightMergeId)
     move.game.tileSets[newSet!!.id] = newSet
 
-    return Success(value = TilesMerged(
-        type = MoveType.MERGE,
-        leftId = move.leftMergeId,
-        rightId = move.rightMergeId,
-        mergedSet = newSet,
-        location = move.moveLocation))
+    return Success(
+        value = TilesMerged(
+            type = MoveType.MERGE,
+            leftId = move.leftMergeId,
+            rightId = move.rightMergeId,
+            mergedSet = newSet,
+            location = move.moveLocation
+        )
+    )
 }
 
 fun split(tileSet : TileSet, index : Int) : List<TileSet> {

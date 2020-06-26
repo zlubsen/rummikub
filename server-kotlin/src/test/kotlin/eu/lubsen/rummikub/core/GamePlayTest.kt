@@ -3,6 +3,7 @@ package eu.lubsen.rummikub.core
 import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.idl.server.ServerMessageType
 import eu.lubsen.rummikub.model.*
+import eu.lubsen.rummikub.util.Failure
 import eu.lubsen.rummikub.util.Success
 import io.vertx.core.json.JsonObject
 import org.junit.jupiter.api.Test
@@ -64,5 +65,20 @@ internal class GamePlayTest {
             "[RED-ONE, RED-TWO, RED-THREE, RED-FOUR, RED-FIVE, RED-SIX]",
             JsonObject(message.toJson()).getJsonObject("tileSet").getJsonArray("tiles").list.toString()
         )
+    }
+
+    @Test
+    fun playerEndsTurnValidTable() {
+        TODO()
+    }
+
+    @Test
+    fun playerEndsTurnInvalidTable() {
+        TODO()
+    }
+
+    @Test
+    fun playerTakesFromHeap() {
+        TODO()
     }
 }
