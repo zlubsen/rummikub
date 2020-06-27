@@ -11,14 +11,15 @@ fun getFirstRegularTileSetFromHand(player : Player) : TileSet? {
     return tile
 }
 
-fun startGameWith(game: Game, tableTiles : List<TileSet>, playerHand: List<TileSet>) {
+fun startGameWith(game: Game, tableTiles : List<TileSet>, playerHand: List<TileSet>, heap : List<Tile>) {
     tableTiles.forEach{ game.table[it.id] = it }
     playerHand.forEach { game.players.values.elementAt(0).hand[it.id] = it }
+    heap.forEach { game.heap.add(it) }
     game.setTurn()
     game.gameState = GameState.STARTED
 }
 
-fun startGameWith(game: Game, tableTiles : List<TileSet>, playerOneHand: List<TileSet>, playerTwoHand: List<TileSet>) {
+fun startGameWith(game: Game, tableTiles : List<TileSet>, playerOneHand: List<TileSet>, playerTwoHand: List<TileSet>, heap: List<Tile>) {
     playerTwoHand.forEach { game.players.values.elementAt(1).hand[it.id] = it }
-    startGameWith(game, tableTiles, playerOneHand)
+    startGameWith(game, tableTiles, playerOneHand, heap)
 }

@@ -110,6 +110,7 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<ServerMessage>
                 when((result.result() as TilesMerged).location) {
                     MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
+                    MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
                 Success(message)
             }
@@ -120,6 +121,7 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<ServerMessage>
                 when((result.result() as TilesSplit).location) {
                     MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
+                    MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
                 Success(message)
             }
@@ -177,6 +179,7 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Resul
 
     val tileSet = player.hand[tileSetId]!!
     player.hand.remove(key = tileSetId)
+    player.hasPlayedInTurn = true
 
     game.table[tileSet.id] = tileSet
     tileSet.tiles.filter { tileIsRegular(it) }.forEach { game.turn.tilesIntroduced.add(element = it) }
@@ -194,11 +197,15 @@ fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<
 
     val tileSet = game.table[tileSetId]!!
     val playedIntersect = tileSet.tiles.filter { tileIsRegular(it) }.intersect(game.turn.tilesIntroduced)
-    return if (playedIntersect.size == tileSet.tiles.size)
-        Failure(reason = "Not all tiles were in player's hand: ${playedIntersect.joinToString { ", " }}") // tileSet contains tiles not played in this move
+    return if (playedIntersect.size != tileSet.tiles.size)
+        Failure(reason = "Not all tiles were in player's hand. ${game.turn.tilesIntroduced.joinToString(
+            separator = ", ",
+            prefix = "Played: (",
+            postfix = ")")}") // tileSet contains tiles not played in this turn
     else {
         game.table.remove(tileSet.id)
         player.hand[tileSetId] = tileSet
+        game.turn.tilesIntroduced = game.turn.tilesIntroduced.subtract(playedIntersect).toMutableList()
         Success(value = MoveOk(
             type = MoveType.TABLE_TO_HAND,
             tileSet = tileSet,
@@ -213,6 +220,7 @@ fun splitTileSet(move : Move) : Result<MoveResult> {
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
         MoveLocation.HAND -> move.game.getCurrentPlayer().hand
+        MoveLocation.NONE -> return Failure("Incorrect move location set.")
     }
 
     if (!location.containsKey(key = tileSetId))
@@ -243,6 +251,7 @@ fun mergeTileSets(move: Move) : Result<MoveResult> {
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
         MoveLocation.HAND -> move.game.getCurrentPlayer().hand
+        MoveLocation.NONE -> return Failure("Incorrect move location set.")
     }
     val newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(left = it, right = it1) } }
     move.game.tileSets.remove(move.leftMergeId)
@@ -278,14 +287,27 @@ fun merge(left: TileSet, right : TileSet) : TileSet {
 fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
     // check if the player played tiles
     if (!playerHasInitialPlay(player = player)
-        && !playerHasPlayedInTurn(player = player))
+        && !playerHasPlayedInTurn(game = game, player = player))
         return Failure(reason = "Player did not play any tiles or met initial play value.")
 
-    if(!hasPlayerWon(game = game, player = player)
-        && playerHasPlayedInTurn(player = player)
-        && tableIsValid(game = game))
+    val playerWon = hasPlayerWon(game = game, player = player)
+    val hasPlayed = playerHasPlayedInTurn(game = game, player = player)
+    val tableIsValid = tableIsValid(game = game)
+
+    return if(!playerWon
+        && hasPlayed
+        && tableIsValid) {
         endTurn(game = game)
-    return Success(value = TurnEnded)
+        Success(value = TurnEnded)
+    } else {
+        if (!hasPlayed)
+            Failure("Cannot end turn, player did not play tiles to the table.")
+        else if (!tableIsValid)
+            Failure("Cannot end turn, table contains invalid melds.")
+        else
+            Failure("Game logic thinks player ${player.playerName} already won.")
+    }
+
 }
 
 fun playerEndsInitialTurn(game: Game) : Result<MoveResult> {
@@ -361,8 +383,9 @@ fun playerHasInitialPlay(player: Player) : Boolean {
     return player.initialPlay
 }
 
-fun playerHasPlayedInTurn(player: Player) : Boolean {
-    return player.hasPlayedInTurn
+fun playerHasPlayedInTurn(game: Game, player: Player) : Boolean {
+    return game.getCurrentPlayer() == player
+            && game.turn.tilesIntroduced.isNotEmpty()
 }
 
 fun tableIsValid(game: Game) : Boolean {
@@ -468,7 +491,6 @@ fun tileIsRegular(tile: Tile) : Boolean {
 }
 
 // TODO for initial play joker now has a value of zero
-// TODO test function
 fun tileListValue(tiles: List<Tile>) : Int {
     return tiles.map { tile ->
         when(tile.type) {

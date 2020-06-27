@@ -8,7 +8,7 @@ class Move constructor(val game: Game, val player : Player, val moveType: MoveTy
     lateinit var leftMergeId : UUID
     lateinit var rightMergeId : UUID
     lateinit var tilesToRelocate : UUID
-    lateinit var moveLocation : MoveLocation
+    var moveLocation = MoveLocation.NONE
 
     fun setSplit(location: MoveLocation, tileSetId: UUID, index : Int) {
         moveLocation = location

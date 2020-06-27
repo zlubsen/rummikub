@@ -110,38 +110,6 @@ internal class GameLogicTest {
     }
 
     @Test
-    fun playerEndsTurn() {
-        val player1 = Player("tester1")
-        player1.initialPlay = true
-        val player2 = Player("tester2")
-        player2.initialPlay = true
-        val player3 = Player("tester3")
-        player3.initialPlay = true
-        val game = Game("endTurnTest", player1)
-        game.addPlayer(player1)
-        game.addPlayer(player2)
-        game.addPlayer(player3)
-        game.startGame()
-
-        player1.hasPlayedInTurn = true
-        assertEquals(player1, game.getCurrentPlayer())
-
-        playerEndsTurn(game, player1)
-
-        player2.hasPlayedInTurn = true
-        assertEquals(player2, game.getCurrentPlayer())
-
-        playerEndsTurn(game, player2)
-
-        player3.hasPlayedInTurn = true
-        assertEquals(player3, game.getCurrentPlayer())
-
-        playerEndsTurn(game, player3)
-
-        assertEquals(player1, game.getCurrentPlayer())
-    }
-
-    @Test
     fun findTileGroup() {
     }
 
