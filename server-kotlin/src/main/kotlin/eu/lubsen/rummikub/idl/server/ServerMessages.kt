@@ -186,7 +186,8 @@ class GameFinished constructor(eventNumber : Long, val game: Game) : ServerMessa
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : "${game.name}"
+                "gameName" : "${game.name}",
+                "winner" : "${game.getCurrentPlayer().id}"
             }
         """.trimIndent()
     }
@@ -243,6 +244,7 @@ class PlayedTurnEnded constructor(eventNumber : Long, private val move : TurnEnd
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
+                "nextPlayerId" : "xxx"
             }
         """.trimIndent()
     }

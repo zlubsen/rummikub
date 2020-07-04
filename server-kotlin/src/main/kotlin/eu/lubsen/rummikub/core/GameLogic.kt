@@ -190,7 +190,6 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Resul
         newLocation = MoveLocation.TABLE))
 }
 
-// TODO test function
 fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<MoveResult> {
     if (!game.table.containsKey(key = tileSetId))
         return Failure(reason = "TileSet is not on table.")
