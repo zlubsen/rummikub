@@ -1,8 +1,11 @@
 <script>
+    import { connection } from "../connection.js"
     let playerName;
 
     function clickOk() {
         console.log("Entered name is: " + playerName);
+        const msg = connection.connect(undefined, playerName);
+        console.log(msg);
     }
 </script>
 

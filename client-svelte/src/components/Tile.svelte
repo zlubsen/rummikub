@@ -2,12 +2,12 @@
     export let tile;
 </script>
 
-<span>
+<div class="inline min-w-10 w-12 h-16 rounded bg-{tile.color}-400 text-center text-2xl">
     {#if tile.isJoker}
-        {tile.color} - Joker
+        &#129313;
     {:else}
-        {tile.color} - {tile.number}
+        {tile.number}
     {/if}
-</span>
+</div>
 
 <style></style>

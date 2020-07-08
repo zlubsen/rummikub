@@ -1,4 +1,6 @@
 <script>
+	import { connection } from "./connection.js";
+	import Tailwindcss from './Tailwindcss.svelte';
 	import RegisterPlayer from "./components/RegisterPlayer.svelte";
 	import GameBoard from "./components/GameBoard.svelte";
 	import GameList from "./components/GameList.svelte";
@@ -7,33 +9,70 @@
 	let socket;
 	let playerId;
 	let playerName;
+
+	let game = {
+		gameName : "game1",
+		currentPlayer : "player1",
+		board : [
+			{
+				id: "xxsdf1",
+				tiles : [
+					{color : "gray", number : "8", isJoker: false},
+					{color : "gray", number : "9", isJoker: false},
+					{color : "gray", number : "10", isJoker: false}
+				]
+			},
+			{
+				id: "ldjfb5",
+				tiles : [
+					{color : "blue", number : "1", isJoker: false},
+					{color : "yellow", number : "1", isJoker: false},
+					{color : "gray", number : "1", isJoker: false}
+				]
+			},
+			{
+				id: "sdlkg4",
+				tiles : [
+					{color : "blue", number : "8", isJoker: false},
+					{color : "gray", number : "3", isJoker: false},
+					{color : "red", number : "10", isJoker: false},
+					{color : "red", number : "10", isJoker: true}
+				]
+			}
+		]
+	};
+	const hand = [
+		{
+			id: "xxsdf1",
+			tiles : [
+				{color : "gray", number : "8", isJoker: false},
+				{color : "gray", number : "9", isJoker: false},
+				{color : "gray", number : "10", isJoker: false}
+			]
+		},
+		{
+			id: "ldjfb5",
+			tiles : [
+				{color : "blue", number : "1", isJoker: false},
+				{color : "yellow", number : "1", isJoker: false},
+				{color : "gray", number : "1", isJoker: false}
+			]
+		},
+		{
+			id: "sdlkg4",
+			tiles : [
+				{color : "blue", number : "8", isJoker: false},
+				{color : "gray", number : "3", isJoker: false},
+				{color : "red", number : "10", isJoker: false},
+				{color : "red", number : "10", isJoker: true}
+			]
+		}
+	];
 </script>
 
 <main>
 	<RegisterPlayer />
 <!--	<GameBoard></GameBoard>-->
 <!--	<GameList></GameList>-->
-	<PlayerHand></PlayerHand>
+	<PlayerHand hand="{hand}"></PlayerHand>
 </main>
-
-<style>
-	/*main {*/
-	/*	text-align: center;*/
-	/*	padding: 1em;*/
-	/*	max-width: 240px;*/
-	/*	margin: 0 auto;*/
-	/*}*/
-
-	/*h1 {*/
-	/*	color: #ff3e00;*/
-	/*	text-transform: uppercase;*/
-	/*	font-size: 4em;*/
-	/*	font-weight: 100;*/
-	/*}*/
-
-	/*@media (min-width: 640px) {*/
-	/*	main {*/
-	/*		max-width: none;*/
-	/*	}*/
-	/*}*/
-</style>
