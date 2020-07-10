@@ -1,15 +1,28 @@
 <script>
-    import { connection } from "../connection.js"
-    let playerName;
+    import { createEventDispatcher } from 'svelte';
 
-    function clickOk() {
-        console.log("Entered name is: " + playerName);
-        const msg = connection.connect(undefined, playerName);
-        console.log(msg);
+    const dispatch = createEventDispatcher();
+
+    let playerName;
+    export let playerId;
+
+    function clickConnect() {
+        dispatch('connect', {
+            playerName: playerName
+        });
+    }
+    function clickDisconnect() {
+        dispatch('disconnect', {});
+        playerName = undefined;
     }
 </script>
 
 <div>
-    <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName}>
-    <button id="okButton" on:click={clickOk}>Ok</button>
+    {#if playerId === undefined }
+        <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName}>
+        <button id="connectButton" on:click={clickConnect}>Join lounge</button>
+    {:else}
+        <div>{playerId} - {playerName}</div>
+        <button id="disconnectButton" on:click={clickDisconnect}>Leave lounge</button>
+    {/if}
 </div>

@@ -14,15 +14,3 @@
     {/each}
     <div class="max-w-10 border-1 border p-2">&nbsp;</div>
 </div>
-
-<!--<style>-->
-<!--    span:hover {-->
-<!--        color:yellow;-->
-<!--        padding: 5px;-->
-<!--        border: 1px solid black;-->
-<!--    }-->
-
-<!--    .tileSet:hover {-->
-<!--        border: 1px solid gray;-->
-<!--    }-->
-<!--</style>-->
