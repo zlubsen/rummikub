@@ -16,6 +16,7 @@ fun joinGame(game: Game, player: Player) : Result<ServerMessage> {
                 game = game,
                 player = player
             )
+                .addRecipient(recipients = game.players.keys)
         )
     } else
         Failure("Game is not open for joining (${game.gameState}).")
@@ -91,7 +92,7 @@ fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
     val arrangeHand = playerCanArrangeHand(move = move)
 
     return when (move.moveType) {
-        MoveType.HAND_TO_TABLE -> playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
+        MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
         MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
         MoveType.SPLIT -> arrangeHand.chain(next = splitTileSet(move = move))
         MoveType.MERGE -> arrangeHand.chain(next = mergeTileSets(move = move))
@@ -100,52 +101,81 @@ fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
     }
 }
 
-fun moveResponse(game: Game, result: Result<MoveResult>) : Result<ServerMessage> {
+fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMessage>> {
     return when(result) {
         is Success -> when(result.result()) {
             is TilesMerged -> {
+                val moveResult = result.result() as TilesMerged
                 val message : ServerMessage = PlayedTileSetsMerged(
                     eventNumber = 0,
-                    move = result.result() as TilesMerged)
-                when((result.result() as TilesMerged).location) {
-                    MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
+                    move = moveResult)
+                when(moveResult.location) {
+                    MoveLocation.HAND -> message.addRecipient(moveResult.playerId)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
-                Success(message)
+                Success(listOf(message))
             }
             is TilesSplit -> {
+                val moveResult = result.result() as TilesSplit
                 val message : ServerMessage = PlayedTileSetSplit(
                     eventNumber = 0,
-                    move = result.result() as TilesSplit)
-                when((result.result() as TilesSplit).location) {
-                    MoveLocation.HAND -> message.addRecipient(game.getCurrentPlayer().id)
+                    move = moveResult)
+                when(moveResult.location) {
+                    MoveLocation.HAND -> message.addRecipient(moveResult.playerId)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
-                Success(message)
+                Success(listOf(message))
             }
             is TurnEnded -> {
                 val message : ServerMessage = PlayedTurnEnded(
                     eventNumber = 0,
                     move = result.result() as TurnEnded
                 )
-                Success(message)
+                Success(listOf(message.addRecipient(recipients = game.players.keys)))
             }
             is MoveOk -> {
-                val message : ServerMessage = when ((result.result() as MoveOk).type) {
+                val messages : List<ServerMessage> = when ((result.result() as MoveOk).type) {
                     MoveType.TAKE_FROM_HEAP -> {
-                        PlayedTookFromHeap(eventNumber = 0, move = result.result() as MoveOk)
+                        val moveOk = result.result() as MoveOk
+                        val items = mutableListOf<ServerMessage>()
+                        items.add(PlayedTookFromHeap(eventNumber = 0, move = moveOk)
+                            .addRecipient(recipient = moveOk.playerId))
+                        items.add(PlayedTurnEnded(eventNumber = 0, move = TurnEnded(
+                            type = MoveType.END_TURN,
+                            playerId = moveOk.playerId,
+                            nextPlayerId = game.getCurrentPlayer().id))
+                            .addRecipient(recipients = game.players.keys))
+                        items.add(PlayerTookFromHeap(eventNumber = 0, move = moveOk).addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId }))
+                        items.addAll(game.players.values
+                            .map {
+                                GameStateResponse(eventNumber = 0, game = game, player = it)
+                                    .addRecipient(recipient = it.id) })
+                        items
                     }
                     MoveType.TABLE_TO_HAND -> {
-                        PlayedTilesTableToHand(eventNumber = 0, move = result.result() as MoveOk)
+                        val moveOk = result.result() as MoveOk
+                        listOf(PlayedTilesTableToHand(eventNumber = 0, move = moveOk)
+                            .addRecipient(recipient = moveOk.playerId),
+                            TableChangedTableToHand(eventNumber = 0, move = moveOk)
+                                .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
+                        )
                     }
                     MoveType.HAND_TO_TABLE -> {
-                        PlayedTilesHandToTable(eventNumber = 0, move = result.result() as MoveOk)
+                        val moveOk = result.result() as MoveOk
+                        listOf(PlayedTilesHandToTable(eventNumber = 0, move = moveOk)
+                            .addRecipient(moveOk.playerId),
+                            TableChangedHandToTable(eventNumber = 0, move = moveOk)
+                                .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
+                        )
                     }
-                    else -> {MessageResponse(eventNumber = 0, message = "This should not be possible...")}
+                    else -> {
+                        listOf(MessageResponse(eventNumber = 0, message = "This response should not be possible...")
+                            .addRecipient(game.players.keys))
+                    }
                 }
-                Success(message)
+                Success(messages)
             }
         }
         is Failure -> Failure(reason = result.message())
@@ -167,10 +197,20 @@ fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
 
         Success(value = MoveOk(
             type = MoveType.TAKE_FROM_HEAP,
+            playerId = player.id,
             tileSet = tileSet,
             newLocation = MoveLocation.HAND))
-    } else
-        Success(value = TurnEnded) // heap is empty
+    } else {
+        // heap is empty
+        endAndResetTurn(game = game)
+        Success(
+            value = TurnEnded(
+                type = MoveType.END_TURN,
+                playerId = player.id,
+                nextPlayerId = game.getCurrentPlayer().id
+            )
+        )
+    }
 }
 
 fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Result<MoveResult> {
@@ -179,13 +219,13 @@ fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Resul
 
     val tileSet = player.hand[tileSetId]!!
     player.hand.remove(key = tileSetId)
-    player.hasPlayedInTurn = true
 
     game.table[tileSet.id] = tileSet
     tileSet.tiles.filter { tileIsRegular(it) }.forEach { game.turn.tilesIntroduced.add(element = it) }
 
     return Success(value = MoveOk(
         type = MoveType.HAND_TO_TABLE,
+        playerId = player.id,
         tileSet = tileSet,
         newLocation = MoveLocation.TABLE))
 }
@@ -207,6 +247,7 @@ fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<
         game.turn.tilesIntroduced = game.turn.tilesIntroduced.subtract(playedIntersect).toMutableList()
         Success(value = MoveOk(
             type = MoveType.TABLE_TO_HAND,
+            playerId = player.id,
             tileSet = tileSet,
             newLocation = MoveLocation.HAND))
     }
@@ -218,8 +259,8 @@ fun splitTileSet(move : Move) : Result<MoveResult> {
 
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
-        MoveLocation.HAND -> move.game.getCurrentPlayer().hand
-        MoveLocation.NONE -> return Failure("Incorrect move location set.")
+        MoveLocation.HAND -> move.player.hand
+        MoveLocation.NONE -> return Failure("Incorrect move location provided.")
     }
 
     if (!location.containsKey(key = tileSetId))
@@ -240,6 +281,7 @@ fun splitTileSet(move : Move) : Result<MoveResult> {
 
     return Success(value = TilesSplit(
         type = MoveType.SPLIT,
+        playerId = move.player.id,
         leftSet = newSets[0],
         rightSet = newSets[1],
         originalId = tileSetId,
@@ -249,17 +291,21 @@ fun splitTileSet(move : Move) : Result<MoveResult> {
 fun mergeTileSets(move: Move) : Result<MoveResult> {
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
-        MoveLocation.HAND -> move.game.getCurrentPlayer().hand
+        MoveLocation.HAND -> move.player.hand
         MoveLocation.NONE -> return Failure("Incorrect move location set.")
     }
     val newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(left = it, right = it1) } }
+    location.remove(move.leftMergeId)
+    location.remove(move.rightMergeId)
+    location[newSet!!.id] = newSet
     move.game.tileSets.remove(move.leftMergeId)
     move.game.tileSets.remove(move.rightMergeId)
-    move.game.tileSets[newSet!!.id] = newSet
+    move.game.tileSets[newSet.id] = newSet
 
     return Success(
         value = TilesMerged(
             type = MoveType.MERGE,
+            playerId = move.player.id,
             leftId = move.leftMergeId,
             rightId = move.rightMergeId,
             mergedSet = newSet,
@@ -297,7 +343,10 @@ fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
         && hasPlayed
         && tableIsValid) {
         endTurn(game = game)
-        Success(value = TurnEnded)
+        Success(value = TurnEnded(
+            type = MoveType.END_TURN,
+            playerId = player.id,
+            nextPlayerId = game.getCurrentPlayer().id))
     } else {
         if (!hasPlayed)
             Failure("Cannot end turn, player did not play tiles to the table.")
@@ -309,10 +358,17 @@ fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
 
 }
 
+// TODO player cannot win in inital turn
 fun playerEndsInitialTurn(game: Game) : Result<MoveResult> {
-    return if (tileListValue(game.turn.tilesIntroduced) > 30 && tableIsValid(game = game)) {
+    return if (tileListValue(game.turn.tilesIntroduced) >= 30 && tableIsValid(game = game)) {
+        game.getCurrentPlayer().initialPlay = true
+        val playerId = game.getCurrentPlayer().id
         endTurn(game = game)
-        Success(value = TurnEnded)
+        val nextPlayerId = game.getCurrentPlayer().id
+        Success(value = TurnEnded(
+            type = MoveType.END_TURN,
+            playerId = playerId,
+            nextPlayerId = nextPlayerId))
     } else
         Failure(reason = "Player does not meet initial play value, or the table contains invalid sets.")
 }
@@ -323,6 +379,7 @@ fun endAndResetTurn(game: Game) {
     endTurn(game = game)
 }
 
+// TODO resetting does not work on initial play: tileset of insufficient value is not placed back in hand from table
 fun resetTurn(game: Game) {
     if (game.turn.tilesIntroduced.isNotEmpty()) {
         game.table.clear()
@@ -491,11 +548,14 @@ fun tileIsRegular(tile: Tile) : Boolean {
 
 // TODO for initial play joker now has a value of zero
 fun tileListValue(tiles: List<Tile>) : Int {
-    return tiles.map { tile ->
-        when(tile.type) {
-            TileType.REGULAR -> tile.number.ordinal
-            TileType.JOKER -> 0
-        } }.reduce { sum, element -> sum + element }
+    return when(tiles.isEmpty()) {
+        true -> 0
+        false -> tiles.map { tile ->
+            when(tile.type) {
+                TileType.REGULAR -> tile.number.ordinal
+                TileType.JOKER -> 0
+            } }.reduce { sum, element -> sum + element }
+    }
 }
 
 fun tileSetValue(tileSet: TileSet) : Int {

@@ -31,15 +31,15 @@ fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
 
     when (move.moveType) {
         MoveType.HAND_TO_TABLE -> {
-            move.tilesToRelocate = UUID.fromString(json.getString("tileGroupId"))
+            move.tilesToRelocate = UUID.fromString(json.getString("tileSetId"))
         }
         MoveType.TABLE_TO_HAND -> {
-            move.tilesToRelocate = UUID.fromString(json.getString("tileGroupId"))
+            move.tilesToRelocate = UUID.fromString(json.getString("tileSetId"))
         }
         MoveType.SPLIT -> {
             move.setSplit(
                 MoveLocation.valueOf(json.getString("moveLocation")),
-                UUID.fromString(json.getString("splitGroupId")),
+                UUID.fromString(json.getString("splitSetId")),
                 json.getInteger("splitIndex")
             )
         }

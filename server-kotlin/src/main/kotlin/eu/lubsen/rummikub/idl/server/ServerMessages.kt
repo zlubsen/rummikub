@@ -1,5 +1,6 @@
 package eu.lubsen.rummikub.idl.server
 
+import eu.lubsen.rummikub.core.isValidTileSet
 import eu.lubsen.rummikub.model.*
 import java.util.UUID
 
@@ -16,13 +17,17 @@ enum class ServerMessageType {
     GameFinished,
     PlayedTilesHandToTable,
     PlayedTilesTableToHand,
+    TableChangedHandToTable,
+    TableChangedTableToHand,
     PlayedTurnEnded,
     PlayedTookFromHeap,
+    PlayerTookFromHeap,
     PlayedTileSetSplit,
     PlayedTileSetsMerged,
     MessageResponse,
     GameListResponse,
-    PlayerListResponse
+    PlayerListResponse,
+    GameStateResponse
 }
 
 sealed class ServerMessage constructor(val eventNumber : Long) {
@@ -50,7 +55,7 @@ class Connected constructor(eventNumber: Long, val player: Player) : ServerMessa
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "player" : ${player.toJson()}
+                "player" : ${playerToJson(player)}
             }
         """.trimIndent()
     }
@@ -64,7 +69,7 @@ class PlayerConnected constructor(eventNumber : Long, val player : Player) : Ser
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "player" : ${player.toJson()}
+                "player" : ${playerToJson(player)}
             }
         """.trimIndent()
     }
@@ -78,7 +83,7 @@ class PlayerDisconnected constructor(eventNumber : Long, val player : Player) : 
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "player" : ${player.toJson()}
+                "player" : ${playerToJson(player)}
             }
         """.trimIndent()
     }
@@ -92,15 +97,7 @@ class GameCreated constructor(eventNumber : Long, val game : Game) : ServerMessa
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "game" : {
-                    "name" : "${game.name}",
-                    "gameState" : "${game.gameState}",
-                    "players" : [
-                        ${game.players.keys.joinToString(
-                                separator = ","
-                            ) { id -> "\"${id}\"" }}
-                    ]
-                }
+                "game" : ${gameToJson(game)}
             }
         """.trimIndent()
     }
@@ -158,7 +155,8 @@ class GameStarted constructor(eventNumber : Long, val game: Game) : ServerMessag
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : "${game.name}"
+                "gameName" : "${game.name}",
+                "gameState" : "${game.gameState}"
             }
         """.trimIndent()
     }
@@ -172,7 +170,8 @@ class GameStopped constructor(eventNumber : Long, val game: Game) : ServerMessag
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "gameName" : "${game.name}"
+                "gameName" : "${game.name}",
+                "gameState" : "${game.gameState}"
             }
         """.trimIndent()
     }
@@ -201,6 +200,7 @@ class PlayedTilesHandToTable constructor(eventNumber : Long, private val move : 
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
                 "tileSet" : ${tileSetToJson(move.tileSet)}
             }
         """.trimIndent()
@@ -215,6 +215,37 @@ class PlayedTilesTableToHand constructor(eventNumber : Long, private val move : 
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
+                "tileSet" : ${tileSetToJson(move.tileSet)}
+            }
+        """.trimIndent()
+    }
+}
+
+class TableChangedHandToTable constructor(eventNumber : Long, private val move : MoveOk) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.TableChangedHandToTable
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
+                "tileSet" : ${tileSetToJson(move.tileSet)}
+            }
+        """.trimIndent()
+    }
+}
+
+class TableChangedTableToHand constructor(eventNumber : Long, private val move : MoveOk) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.TableChangedTableToHand
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
                 "tileSet" : ${tileSetToJson(move.tileSet)}
             }
         """.trimIndent()
@@ -229,7 +260,22 @@ class PlayedTookFromHeap constructor(eventNumber : Long, private val move : Move
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
                 "tileSet" : ${tileSetToJson(move.tileSet)}
+            }
+        """.trimIndent()
+    }
+}
+
+class PlayerTookFromHeap constructor(eventNumber : Long, private val move : MoveOk) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.PlayerTookFromHeap
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}"
             }
         """.trimIndent()
     }
@@ -238,13 +284,13 @@ class PlayedTookFromHeap constructor(eventNumber : Long, private val move : Move
 class PlayedTurnEnded constructor(eventNumber : Long, private val move : TurnEnded) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.PlayedTurnEnded
 
-    // TODO implement message
     override fun toJson(): String {
         return """
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "nextPlayerId" : "xxx"
+                "playerId" : "${move.playerId}",
+                "nextPlayerId" : "${move.nextPlayerId}"
             }
         """.trimIndent()
     }
@@ -276,8 +322,8 @@ class PlayedTileSetsMerged constructor(eventNumber : Long, private val move : Ti
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "location" : "${move.location}",
-                "leftID" : "${move.leftId}",
-                "rightID" : "${move.rightId}",
+                "leftId" : "${move.leftId}",
+                "rightId" : "${move.rightId}",
                 "tileSet" : ${tileSetToJson(move.mergedSet)}
             }
         """.trimIndent()
@@ -338,15 +384,55 @@ class PlayerListResponse constructor(eventNumber : Long, private val players : L
     }
 }
 
+// TODO test message
+class GameStateResponse constructor(eventNumber: Long, private val game: Game, private val player: Player) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.GameStateResponse
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "game" : ${gameToJson(game)},
+                "currentPlayer" : "${game.getCurrentPlayer().id}",
+                "gameState" : "${game.gameState}",
+                "table" : ${game.table.values.joinToString(
+                    separator = ",",
+                    prefix = "[",
+                    postfix = "]")
+                    { tileSetToJson(it) }
+                },
+                "hand" : ${player.hand.values.joinToString(
+                    separator = ",",
+                    prefix = "[",
+                    postfix = "]")
+                    { tileSetToJson(it) }
+                }
+            }
+        """.trimIndent()
+    }
+}
+
 private fun tileSetToJson(tileSet: TileSet) : String {
     return """
         {
             "id" : "${tileSet.id}",
+            "isValid" : ${isValidTileSet(tileSet)},
             "tiles" : ${tileSet.tiles.joinToString(
                 separator = ",",
                 prefix = "[",
                 postfix = "]")
-            { tile -> """"${tile.color}-${tile.number}"""" }}
+            { tileToJson(it) }}
+        }
+    """.trimIndent()
+}
+
+private fun tileToJson(tile: Tile) : String {
+    return """
+        {
+            "color" : "${tile.color.name}",
+            "number" : "${tile.number.ordinal}",
+            "isJoker" : ${tile.type == TileType.JOKER}
         }
     """.trimIndent()
 }
@@ -363,7 +449,14 @@ private fun playerToJson(player: Player) : String {
 private fun gameToJson(game: Game) : String {
     return """
         {
-            "gameName" : "${game.name}"
+            "gameName" : "${game.name}",
+            "gameState" : "${game.gameState}",
+            "owner" : "${game.owner.id}",
+            "players" : [
+                ${game.players.keys.joinToString(
+                    separator = ","
+                ) { id -> "\"${id}\"" }}
+            ]
         }
     """.trimIndent()
 }

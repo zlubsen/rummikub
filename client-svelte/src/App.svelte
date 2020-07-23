@@ -1,15 +1,19 @@
 <script>
     import Tailwindcss from './Tailwindcss.svelte';
-    import { Connection } from "./utils/Connection.js";
+    import {Connection} from "./utils/Connection.js";
+    import {LOCATION_TABLE, LOCATION_HAND} from "./utils/GameUtils.js";
     import * as IDL from "./idl/ClientMessages.js";
     import RegisterPlayer from "./components/RegisterPlayer.svelte";
     import GameBoard from "./components/GameBoard.svelte";
     import GameList from "./components/GameList.svelte";
     import PlayerHand from "./components/PlayerHand.svelte";
+    import TurnControls from "./components/TurnControls.svelte";
 
-    let playerId;
-    let playerName;
-    let currentGame;
+    let playerId = undefined;
+    let playerName = undefined;
+    let currentGame = undefined;
+    $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
+    $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === playerId;
 
     let connection;
     let logMessage;
@@ -17,11 +21,13 @@
     let players = new Map();
     let games = new Map();
 
-    let game = {};
-    let hand = [];
+    let currentPlayer = undefined;
+    let table = new Map();
+    let hand = new Map();
 
     const receiveHandler = function (message) {
         let messageType = message.messageType
+        console.log("received msg: " + message.messageType);
         switch (messageType) {
             case "MessageResponse":
                 logMessage = message.message;
@@ -31,6 +37,7 @@
                 playerName = message.player.name
                 connection.sendJson(IDL.msgRequestPlayerList(playerId));
                 connection.sendJson(IDL.msgRequestGameList(playerId));
+                logMessage = "Welcome to Rummikub!";
                 break;
             case "PlayerConnected":
                 players.set(message.player.id, message.player.name);
@@ -43,49 +50,155 @@
                 logMessage = "Player left: " + message.player.name;
                 break;
             case "GameCreated":
-                games.set(message.game.name, message.game);
+                games.set(message.game.gameName, message.game);
                 games = games;
+                if (message.game.owner === playerId)
+                    connection.sendJson(IDL.msgJoinGame(playerId, message.game.gameName));
+                logMessage = "Game " + message.game.gameName + " created by " + players.get(message.game.owner);
                 break;
             case "GameRemoved":
-                games.delete(message.game.gameName);
+                games.delete(message.gameName);
                 games = games;
+                if (currentGame === message.gameName) {
+                    currentGame = undefined;
+                }
+                logMessage = "Game " + message.gameName + " removed";
                 break;
             case "PlayerJoinedGame":
+                if (message.playerId === playerId)
+                    currentGame = message.gameName;
+                logMessage = "Player " + players.get(message.playerId) + " joined game " + message.gameName;
                 break;
             case "PlayerLeftGame":
+                if (message.playerId === playerId)
+                    currentGame = undefined;
+                logMessage = "Player " + players.get(message.playerId) + " left game " + message.gameName;
                 break;
             case "GameStarted":
+                if (games.has(message.gameName))
+                    games.get(message.gameName).gameState = message.gameState;
+                if (currentGame !== undefined && currentGame === message.gameName)
+                    connection.sendJson(IDL.msgRequestGameState(playerId, currentGame));
+                logMessage = "Game " + currentGame + " started";
                 break;
             case "GameStopped":
+                if (games.has(message.gameName)) {
+                    games.get(message.gameName).gameState = message.gameState;
+                    games = games;
+                }
+                if (currentGame === message.gameName) {
+                    // TODO cleanup this game
+                }
                 break;
             case "GameFinished":
+                // TODO
                 break;
             case "PlayedTilesHandToTable":
+                if (hand.has(message.tileSet.id)) {
+                    hand.delete(message.tileSet.id);
+                    table.set(message.tileSet.id, message.tileSet);
+                    hand = hand;
+                    table = table;
+                }
                 break;
             case "PlayedTilesTableToHand":
+                if (table.has(message.tileSet.id)) {
+                    table.delete(message.tileSet.id);
+                    hand.set(message.tileSet.id, message.tileSet);
+                    hand = hand;
+                    table = table;
+                }
+                break;
+            case "TableChangedHandToTable":
+                table.set(message.tileSet.id, message.tileSet);
+                table = table;
+                break;
+            case "TableChangedTableToHand":
+                if (table.has(message.tileSet.id)) {
+                    table.delete(message.tileSet.id);
+                    table = table;
+                }
                 break;
             case "PlayedTurnEnded":
+                currentPlayer = message.nextPlayerId;
+                logMessage = "Turn ended. Next up is " + players.get(currentPlayer) + ".";
                 break;
             case "PlayedTookFromHeap":
+                hand.set(message.tileSet.id, message.tileSet);
+                hand = hand;
+                break;
+            case "PlayerTookFromHeap":
+                logMessage = players.get(message.playerId) + " took a tile from the heap.";
                 break;
             case "PlayedTileSetSplit":
+                if (message.location === "HAND") {
+                    hand.delete(message.originalId);
+                    hand.set(message.leftSet.id, message.leftSet);
+                    hand.set(message.rightSet.id, message.rightSet);
+                    hand = hand;
+                } else if (message.location === "TABLE") {
+                    table.delete(message.originalId);
+                    table.set(message.leftSet.id, message.leftSet);
+                    table.set(message.rightSet.id, message.rightSet);
+                    table = table;
+                }
                 break;
             case "PlayedTileSetsMerged":
+                if (message.location === "HAND") {
+                    hand.delete(message.leftId);
+                    hand.delete(message.rightId);
+                    hand.set(message.tileSet.id, message.tileSet);
+                    hand = hand;
+                } else if (message.location === "TABLE") {
+                    table.delete(message.leftId);
+                    table.delete(message.rightId);
+                    table.set(message.tileSet.id, message.tileSet);
+                    table = table;
+                }
                 break;
             case "GameListResponse":
                 games.clear();
-                message.games.forEach( function (gameName) { games.set(gameName, gameName); });
+                message.games.forEach(function (gameName) {
+                    games.set(gameName, gameName);
+                });
                 games = games;
                 break;
             case "PlayerListResponse":
                 players.clear();
-                message.players.forEach( function (player) { players.set(player.id, player.name); });
+                message.players.forEach(function (player) {
+                    players.set(player.id, player.name);
+                });
                 players = players;
                 break;
+            case "GameStateResponse":
+                hand.clear();
+                message.hand.forEach((tileSet) => {
+                    hand.set(tileSet.id, tileSet)
+                });
+                hand = hand;
+
+                table.clear();
+                message.table.forEach((tileSet) => {
+                    table.set(tileSet.id, tileSet)
+                });
+                table = table;
+
+                currentPlayer = message.currentPlayer;
+                if (games.has(message.game.gameName)) {
+                    games.delete(message.game.gameName)
+                }
+                games.set(message.game.gameName, message.game);
+                games = games;
+                break;
             default:
-                console.log("Unknown message received from server: " + message);
+                console.log("Unknown message received from server: " + message.messageType);
                 break;
         }
+    }
+
+    const closeHandler = function() {
+        console.log("disconnected from server");
+        // TODO cleanup client state
     }
 
     // let game = {
@@ -119,23 +232,27 @@
     // 		}
     // 	]
     // };
-    // const hand = [
+    // hand.set("xxsdf1",
     // 	{
     // 		id: "xxsdf1",
     // 		tiles : [
     // 			{color : "gray", number : "8", isJoker: false},
     // 			{color : "gray", number : "9", isJoker: false},
     // 			{color : "gray", number : "10", isJoker: false}
-    // 		]
-    // 	},
+    // 		],
+    //         isValid:"true"
+    // 	});
+    // hand.set("ldjfb5",
     // 	{
     // 		id: "ldjfb5",
     // 		tiles : [
     // 			{color : "blue", number : "1", isJoker: false},
     // 			{color : "yellow", number : "1", isJoker: false},
     // 			{color : "gray", number : "1", isJoker: false}
-    // 		]
-    // 	},
+    // 		],
+    //         isValid:"true"
+    // 	});
+    // hand.set("sdlkg4",
     // 	{
     // 		id: "sdlkg4",
     // 		tiles : [
@@ -143,26 +260,13 @@
     // 			{color : "gray", number : "3", isJoker: false},
     // 			{color : "red", number : "10", isJoker: false},
     // 			{color : "red", number : "10", isJoker: true}
-    // 		]
-    // 	}
-    // ];
-    function requestGamesMessage() {
-        return JSON.stringify({
-            messageType : "RequestPlayerList",
-            playerId : playerId
-        });
-    }
-
-    function requestPlayersMessage() {
-        return JSON.stringify({
-            messageType : "RequestGameList",
-            playerId : playerId
-        });
-    }
+    // 		],
+    //         isValid:"false"
+    // 	});
 
     function eventJoin(event) {
         playerName = event.detail.playerName;
-        connection = new Connection(undefined, playerName, receiveHandler);
+        connection = new Connection(undefined, playerName, receiveHandler, closeHandler);
     }
 
     function eventLeave(event) {
@@ -172,34 +276,116 @@
     }
 
     function eventJoinGame(event) {
-        console.log("join game: " + event.detail.gameName);
-        connection.sendJson(IDL.msgJoinGame(playerId, event.detail.gameName))
+        connection.sendJson(IDL.msgJoinGame(playerId, event.detail.gameName));
     }
 
     function eventLeaveGame(event) {
-        console.log("leave game: " + event.detail.gameName);
-        connection.sendJson(IDL.msgLeaveGame(playerId, event.detail.gameName))
+        connection.sendJson(IDL.msgLeaveGame(playerId, event.detail.gameName));
+    }
+
+    function eventCreateGame(event) {
+        connection.sendJson(IDL.msgCreateGame(playerId, event.detail.gameName));
+    }
+
+    function eventRemoveGame(event) {
+        connection.sendJson(IDL.msgRemoveGame(playerId, event.detail.gameName));
+    }
+
+    function eventStartGame(event) {
+        connection.sendJson(IDL.msgStartGame(playerId, event.detail.gameName));
+    }
+
+    function eventStopGame(event) {
+        connection.sendJson(IDL.msgStopGame(playerId, event.detail.gameName));
+    }
+
+    function eventMerge(event) {
+        const msg = IDL.msgMerge(playerId, currentGame, event.detail.leftId, event.detail.rightId, event.detail.location);
+        connection.sendJson(msg);
+    }
+
+    function eventSplit(event) {
+        const msg = IDL.msgSplit(playerId, currentGame, event.detail.id, event.detail.index, event.detail.location);
+        connection.sendJson(msg);
+    }
+
+    function eventMoveTiles(event) {
+        if (event.detail.targetLocation === LOCATION_TABLE) {
+            connection.sendJson(IDL.msgHandToTable(playerId, currentGame, event.detail.id));
+        } else if (event.detail.targetLocation === LOCATION_HAND) {
+            connection.sendJson(IDL.msgTableToHand(playerId, currentGame, event.detail.id));
+        }
+    }
+
+    function eventEndTurn(event) {
+        console.log("eventEndTurn");
+        connection.sendJson(IDL.msgEndTurn(playerId, currentGame));
+    }
+
+    function eventTakeFromHeap(event) {
+        console.log("eventTakeFromHeap");
+        connection.sendJson(IDL.msgTakeFromHeap(playerId, currentGame));
     }
 
     function clickRequestGames(event) {
-        const msg = IDL.msgRequestGameList(playerId);
-        connection.sendJson(msg);
+        connection.sendJson(IDL.msgRequestGameList(playerId));
     }
 
     function clickRequestPlayers(event) {
-        const msg = IDL.msgRequestPlayerList(playerId);
-        connection.sendJson(msg);
+        connection.sendJson(IDL.msgRequestPlayerList(playerId));
     }
 </script>
 
 <main>
-    <button on:click={clickRequestGames}>Request Games</button>
-    <button on:click={clickRequestPlayers}>Request Players</button>
+    <header id="header" class="border border-blue-300 rounded m-1 p-3">
+        <span class="bold">Welcome to Rummikub!</span>
+        {#if playerName}
+            <span class="pl-2 pr-2">Player: {playerName}</span>
+        {/if}
+        {#if currentGame}
+            <span class="pl-2 pr-2">Game: {currentGame}</span>
+        {/if}
+        <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
+    </header>
+    <section id="game" class="flex flex-wrap m-1">
+            <GameBoard table="{table}"
+                on:merge={eventMerge}
+                on:split={eventSplit}
+                on:moveTiles="{eventMoveTiles}"
+            />
+            <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}"
+                on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
+                on:createGame={eventCreateGame}
+                on:removeGame={eventRemoveGame}
+                on:startGame={eventStartGame}
+                on:stopGame={eventStopGame}
+            />
+            <PlayerHand hand="{hand}"
+                on:merge={eventMerge}
+                on:split={eventSplit}
+                on:moveTiles={eventMoveTiles}
+            />
+            <TurnControls {gameState} {isPlayersTurn}
+                on:endTurn={eventEndTurn}
+                on:takeFromHeap={eventTakeFromHeap}
+            />
+    </section>
+    <footer id="footer" class="min-w-full">
+        {#if logMessage}
+            {logMessage}
+        {/if}
+    </footer>
 
-    <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
-    <!--	<GameBoard></GameBoard>-->
-    <GameList games="{games}" currentGame="{currentGame}" on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}></GameList>
-    <PlayerHand hand="{hand}"></PlayerHand>
-
-    <div>{logMessage}</div>
+    <div id="admin_section" class="my-2 mx-2 p-2">
+        <button on:click={clickRequestGames}>Request Games</button>
+        <button on:click={clickRequestPlayers}>Request Players</button>
+    </div>
 </main>
+
+<!-- TODO show/hide buttons and such based on gamestate -->
+<!-- V UX: move tiles from same location: do not send message to server; make it impossible-->
+<!-- - can we merge with not owned tilesets during initial play?-->
+<!-- - UX: directly move tileset location and merge with other tileset (e.g., directly append a tile to a set on the table)-->
+<!-- - tried to merge a set with a J, lost the set on the table (‘TileSet not found in TABLE.’), and also in the hand…-->
+<!-- - UX: merge fields stay visible when not dragging a tileset (dragEnd is not called)-->
+<!-- - Logic for checking victory conditions (check when moving / manipulating tiles, on end turn?)-->

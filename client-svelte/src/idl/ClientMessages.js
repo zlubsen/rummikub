@@ -61,6 +61,76 @@ function msgRequestGameList(playerId) {
     }
 }
 
+function msgRequestGameState(playerId, gameId) {
+    return {
+        messageType : "RequestGameState",
+        playerId : playerId,
+        gameId : gameId
+    }
+}
+
+function msgMerge(playerId, gameId, leftId, rightId, location) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "MERGE",
+        playerId : playerId,
+        gameId : gameId,
+        leftMergeId : leftId,
+        rightMergeId : rightId,
+        moveLocation : location
+    }
+}
+
+function msgSplit(playerId, gameId, tileSetId, index, location) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "SPLIT",
+        playerId : playerId,
+        gameId : gameId,
+        splitSetId : tileSetId,
+        splitIndex : index,
+        moveLocation : location
+    }
+}
+
+function msgHandToTable(playerId, gameId, tileSetId) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "HAND_TO_TABLE",
+        playerId : playerId,
+        gameId : gameId,
+        tileSetId : tileSetId,
+    }
+}
+
+function msgTableToHand(playerId, gameId, tileSetId) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "TABLE_TO_HAND",
+        playerId : playerId,
+        gameId : gameId,
+        tileSetId : tileSetId,
+    }
+}
+
+function msgEndTurn(playerId, gameId) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "END_TURN",
+        playerId : playerId,
+        gameId : gameId
+    }
+}
+
+function msgTakeFromHeap(playerId, gameId) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "TAKE_FROM_HEAP",
+        playerId : playerId,
+        gameId : gameId
+    }
+}
+
 // TODO messages for PlayerMove
 
 export {
@@ -71,5 +141,12 @@ export {
     msgStartGame,
     msgStopGame,
     msgRequestGameList,
-    msgRequestPlayerList
+    msgRequestPlayerList,
+    msgRequestGameState,
+    msgMerge,
+    msgSplit,
+    msgHandToTable,
+    msgTableToHand,
+    msgEndTurn,
+    msgTakeFromHeap
 };

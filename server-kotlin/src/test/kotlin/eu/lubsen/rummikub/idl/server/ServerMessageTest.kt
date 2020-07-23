@@ -58,8 +58,9 @@ internal class ServerMessageTest {
                 "messageType" : "GameCreated",
                 "eventNumber" : 0,
                 "game" : {
-                    "name" : "OurGame",
+                    "gameName" : "OurGame",
                     "gameState" : "JOINING",
+                    "owner" : "${player1.id}",
                     "players" : [
                         "${player1.id}",
                         "${player2.id}"
@@ -171,8 +172,20 @@ internal class ServerMessageTest {
                 "messageType" : "GameListResponse",
                 "eventNumber" : 0,
                 "games" : [
-                    { "gameName" : "game1" },
-                    { "gameName" : "game2" }
+                    {
+                        "gameName" : "game1",
+                        "gameState" : "JOINING",
+                        "owner" : "${player1.id}",
+                        "players" : [
+                        ]
+                    },
+                    {
+                        "gameName" : "game2",
+                        "gameState" : "JOINING",
+                        "owner" : "${player2.id}",
+                        "players" : [
+                        ]
+                    }
                 ]
             }
         """

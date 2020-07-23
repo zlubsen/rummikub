@@ -39,6 +39,51 @@ internal class GamePlayTest {
     }
 
     @Test
+    fun playerSplitsTilesInHandInTurn() {
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("splitTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        startGameWith(game = game,
+            tableTiles = listOf(parseTileSet("Bla1-Bla2-Bla3"), parseTileSet("Blu1-Blu2-Blu3")),
+            playerOneHand = listOf(parseTileSet("Red1-Red2-Red3"), parseTileSet("Red4-Red5-Red6")),
+            playerTwoHand = listOf(parseTileSet("Yel1-Red1-Blu1"), parseTileSet("Bla5")),
+            heap = listOf(Tile(type = TileType.REGULAR, color = TileColor.RED, number = TileNumber.TEN)))
+
+        val move = Move(game, player1, MoveType.SPLIT)
+        move.moveLocation = MoveLocation.HAND
+        val tileSetId = player1.hand.values.elementAt(0).id
+        move.setSplit(location = MoveLocation.HAND, tileSetId = tileSetId, index = 1)
+        val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
+
+        assertTrue(result.isSuccess())
+        val success = result as Success
+        val message = success.result()[0]
+        assertEquals(ServerMessageType.PlayedTileSetSplit, message.type)
+        assertEquals(
+            """
+                [{color=RED, number=1, isJoker=false}]
+            """.trimIndent(),
+            JsonObject(message.toJson()).getJsonObject("leftSet").getJsonArray("tiles").list.toString()
+        )
+        assertEquals(
+            """
+                [{color=RED, number=2, isJoker=false}, {color=RED, number=3, isJoker=false}]
+            """.trimIndent(),
+            JsonObject(message.toJson()).getJsonObject("rightSet").getJsonArray("tiles").list.toString()
+        )
+        assertEquals(tileSetId.toString(), JsonObject(message.toJson()).getString("originalId"))
+
+        // TODO assert that the original id is not present anymore at the location
+        // TODO assert that the new sets are present at the location
+    }
+
+    @Test
     fun playerMergesTilesInHandInTurn() {
         val player1 = Player("tester1")
         val player2 = Player("tester2")
@@ -61,13 +106,16 @@ internal class GamePlayTest {
         val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
 
         assertTrue(result.isSuccess())
-        val success = result as Success<ServerMessage>
-        val message = success.result()
+        val message = (result as Success).result()[0]
         assertEquals(ServerMessageType.PlayedTileSetsMerged, message.type)
         assertEquals(
-            "[RED-ONE, RED-TWO, RED-THREE, RED-FOUR, RED-FIVE, RED-SIX]",
+            """
+                [{color=RED, number=1, isJoker=false}, {color=RED, number=2, isJoker=false}, {color=RED, number=3, isJoker=false}, {color=RED, number=4, isJoker=false}, {color=RED, number=5, isJoker=false}, {color=RED, number=6, isJoker=false}]
+            """.trimIndent(),
             JsonObject(message.toJson()).getJsonObject("tileSet").getJsonArray("tiles").list.toString()
         )
+        // TODO assert that the original id's are not present anymore at the location
+        // TODO assert that the new set is present at the location
     }
 
     @Test
@@ -79,7 +127,6 @@ internal class GamePlayTest {
         lounge.games[game.name] = game
         game.addPlayer(player1)
         player1.initialPlay = true
-        player1.hasPlayedInTurn = true
         game.addPlayer(player2)
         player2.initialPlay = true
         startGameWith(game = game,
@@ -97,9 +144,8 @@ internal class GamePlayTest {
         assertEquals(player2, game.getCurrentPlayer())
         assertFalse(playerHasPlayedInTurn(game, player2))
         assertTrue(tableIsValid(game = game))
-        val success = result as Success<ServerMessage>
-        val message = success.result()
-        assertEquals(ServerMessageType.PlayedTurnEnded, message.type)
+        val messages = (result as Success).result()
+        assertEquals(ServerMessageType.PlayedTurnEnded, messages[0].type)
     }
 
     @Test
@@ -111,7 +157,6 @@ internal class GamePlayTest {
         lounge.games[game.name] = game
         game.addPlayer(player1)
         player1.initialPlay = true
-        player1.hasPlayedInTurn = true
         game.addPlayer(player2)
         player2.initialPlay = true
         startGameWith(game = game,
@@ -126,7 +171,7 @@ internal class GamePlayTest {
         assertTrue(result.isFailure())
         assertEquals(player1, game.getCurrentPlayer())
         assertFalse(tableIsValid(game = game))
-        val failure = result as Failure<ServerMessage>
+        val failure = result as Failure
         val message = failure.message()
         assertTrue(message.isNotBlank())
     }
@@ -153,10 +198,11 @@ internal class GamePlayTest {
 
         assertTrue(result.isSuccess())
         assertEquals(player2, game.getCurrentPlayer())
-        val success = result as Success<ServerMessage>
-        val message = success.result()
-        assertEquals(ServerMessageType.PlayedTookFromHeap, message.type)
-        assertTrue(message is PlayedTookFromHeap)
+
+        val messages = (result as Success).result()
+        assertEquals(ServerMessageType.PlayedTookFromHeap, messages[0].type)
+        assertEquals(ServerMessageType.PlayedTurnEnded, messages[1].type)
+
         assertEquals(3, player1.hand.size)
     }
 
@@ -192,8 +238,7 @@ internal class GamePlayTest {
         assertEquals(2, game.table.size)
         assertEquals(3, player1.hand.size)
 
-        val success = result as Success<ServerMessage>
-        val message = success.result()
+        val message = (result as Success).result()[0]
         assertEquals(ServerMessageType.PlayedTookFromHeap, message.type)
         assertTrue(message is PlayedTookFromHeap)
     }
@@ -225,9 +270,9 @@ internal class GamePlayTest {
         assertEquals(player1, game.getCurrentPlayer())
         assertTrue(playerHasPlayedInTurn(game, player1))
         assertFalse(tableIsValid(game = game))
-        val success = result as Success<ServerMessage>
-        val message = success.result()
-        assertEquals(ServerMessageType.PlayedTilesHandToTable, message.type)
+        val messages = (result as Success).result()
+        assertEquals(ServerMessageType.PlayedTilesHandToTable, messages[0].type)
+        assertEquals(ServerMessageType.TableChangedHandToTable, messages[1].type)
         assertEquals(3, game.table.size)
     }
 
@@ -267,9 +312,10 @@ internal class GamePlayTest {
         assertTrue(tableIsValid(game = game))
         assertFalse(playerHasPlayedInTurn(game, player1))
 
-        val success = result as Success<ServerMessage>
-        val message = success.result()
-        assertEquals(ServerMessageType.PlayedTilesTableToHand, message.type)
+        val messages = (result as Success).result()
+        assertEquals(ServerMessageType.PlayedTilesTableToHand, messages[0].type)
+        assertEquals(ServerMessageType.TableChangedTableToHand, messages[1].type)
+
         assertEquals(2, game.table.size)
     }
 
@@ -299,7 +345,7 @@ internal class GamePlayTest {
         assertTrue(result.isFailure())
         assertFalse(playerHasPlayedInTurn(game, player1))
 
-        val failure = result as Failure<ServerMessage>
+        val failure = result as Failure
         val message = failure.message()
         println(message)
         assertTrue(message.isNotBlank())
@@ -353,7 +399,7 @@ internal class GamePlayTest {
         val result = handlePlayerMove(lounge, game.name, arrangeMove)
 
         assertTrue(result.isFailure())
-        val failure = result as Failure<ServerMessage>
+        val failure = result as Failure
         val message = failure.message()
         assertTrue(message.isNotBlank())
     }

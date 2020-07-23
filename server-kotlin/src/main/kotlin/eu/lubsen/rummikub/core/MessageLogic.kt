@@ -1,9 +1,6 @@
 package eu.lubsen.rummikub.core
 
-import eu.lubsen.rummikub.idl.server.GameListResponse
-import eu.lubsen.rummikub.idl.server.MessageResponse
-import eu.lubsen.rummikub.idl.server.PlayerListResponse
-import eu.lubsen.rummikub.idl.server.ServerMessage
+import eu.lubsen.rummikub.idl.server.*
 import eu.lubsen.rummikub.model.Lounge
 import eu.lubsen.rummikub.model.Move
 import eu.lubsen.rummikub.util.Failure
@@ -52,7 +49,7 @@ fun handleStopGame(lounge : Lounge, gameName : String, playerId : UUID) : Result
         Failure("Cannot start game, player is not the owner.")
 }
 
-fun handlePlayerMove(lounge : Lounge, gameName : String, move : Move) : Result<ServerMessage> {
+fun handlePlayerMove(lounge : Lounge, gameName : String, move : Move) : Result<List<ServerMessage>> {
     return if (isValidGameName(lounge = lounge, gameName = gameName))
         moveResponse(game = lounge.games[gameName]!!, result = tryMove(move = move))
     else
@@ -73,6 +70,16 @@ fun handleRequestPlayerList(lounge : Lounge, playerId : UUID) : Result<ServerMes
         PlayerListResponse(
             eventNumber = 0,
             players = lounge.listPlayers()
+        ).addRecipient(playerId)
+    )
+}
+
+fun handleRequestGameState(lounge : Lounge, gameName: String, playerId : UUID) : Result<ServerMessage> {
+    return Success(
+        GameStateResponse(
+            eventNumber = 0,
+            game = lounge.games[gameName]!!,
+            player = lounge.players[playerId]!!
         ).addRecipient(playerId)
     )
 }

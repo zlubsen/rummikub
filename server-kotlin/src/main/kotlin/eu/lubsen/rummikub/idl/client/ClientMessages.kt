@@ -15,6 +15,7 @@ enum class ClientMessageType {
     StopGame,
     RequestGameList,
     RequestPlayerList,
+    RequestGameState,
     PlayerMove
 }
 
@@ -49,6 +50,11 @@ class RequestGameList(json: JsonObject) : ClientMessage(json = json) {
 
 class RequestPlayerList(json: JsonObject) : ClientMessage(json = json) {
     override val type: ClientMessageType = ClientMessageType.RequestPlayerList
+}
+
+class RequestGameState(json: JsonObject) : ClientMessage(json = json) {
+    val gameName : String = json.getString("gameId");
+    override val type: ClientMessageType = ClientMessageType.RequestGameState
 }
 
 class StartGame(json: JsonObject) : ClientMessage(json = json) {

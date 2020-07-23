@@ -64,7 +64,7 @@ class ServerVerticle : AbstractVerticle() {
                 playerDisconnects(lounge = lounge, player = lounge.players[playerId!!]!!)
             }
         }
-        // add the player
+
         val player = Player(playerName = userName)
         clientSockets[player.id] = webSocket
         playerConnects(lounge = lounge, player = player)
@@ -91,6 +91,7 @@ class ServerVerticle : AbstractVerticle() {
             ClientMessageType.StopGame -> StopGame(json = json)
             ClientMessageType.RequestGameList -> RequestGameList(json = json)
             ClientMessageType.RequestPlayerList -> RequestPlayerList(json = json)
+            ClientMessageType.RequestGameState -> RequestGameState(json = json)
             ClientMessageType.PlayerMove -> PlayerMove(json = json, lounge = lounge)
         }
 
@@ -106,12 +107,23 @@ class ServerVerticle : AbstractVerticle() {
                 is LeaveGame -> handleLeaveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is RequestGameList -> handleRequestGameList(lounge = lounge, playerId = message.playerId)
                 is RequestPlayerList -> handleRequestPlayerList(lounge = lounge, playerId = message.playerId)
+                is RequestGameState -> handleRequestGameState(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is StartGame -> handleStartGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is StopGame -> handleStopGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is PlayerMove -> handlePlayerMove(lounge = lounge, gameName = message.gameName, move = message.move)
             }
             when(result) {
-                is Success<ServerMessage> -> { sendMessage(message = result.result()) }
+                is Success<*> -> {
+                    when (result.result()) {
+                        is ServerMessage -> {
+                            sendMessage(message = result.result() as ServerMessage)
+                        }
+                        else -> {
+                            val messages = result.result() as List<ServerMessage>
+                            sendMessage(messages = messages)
+                        }
+                    }
+                }
                 is Failure -> sendMessage(
                         message = MessageResponse(
                             eventNumber = 0,
@@ -125,6 +137,9 @@ class ServerVerticle : AbstractVerticle() {
                     message = "Invalid player ID.").addRecipient(message.playerId))
     }
 
+    private fun sendMessage(messages : List<ServerMessage>) {
+        messages.forEach { sendMessage(message = it) }
+    }
     private fun sendMessage(message : ServerMessage) {
         for (recipient in message.recipients) {
             val channel = clientSockets[recipient]

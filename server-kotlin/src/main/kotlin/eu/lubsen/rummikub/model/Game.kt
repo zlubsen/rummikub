@@ -1,8 +1,6 @@
 package eu.lubsen.rummikub.model
 
 import eu.lubsen.rummikub.core.*
-import io.vertx.core.json.JsonArray
-import io.vertx.core.json.JsonObject
 import java.util.UUID
 
 class Game constructor(val name: String, val owner : Player) {
@@ -85,15 +83,6 @@ class Game constructor(val name: String, val owner : Player) {
 
     fun setTurn() {
         turn = Turn(table = table.values.toList(), playerHand = getCurrentPlayer().hand.values.toList())
-    }
-
-    fun toJson() : JsonObject {
-        return JsonObject()
-            .put("name", name)
-            .put("gameState", gameState.name)
-            .put("currentPlayer", getCurrentPlayer().id.toString())
-            .put("players", JsonArray(players.values.toList().map { p -> p.toJson() }))
-            .put("table", JsonArray(table.values.toList()))
     }
 }
 
