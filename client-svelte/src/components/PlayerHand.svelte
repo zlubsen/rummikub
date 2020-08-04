@@ -8,7 +8,6 @@
     export let hand;
 
     function eventMoveTilesToHand(event) {
-        console.log("eventMoveTilesToHand");
         if (event.dataTransfer.getData(TILESET_SOURCE_LOCATION_TYPE)!==LOCATION_HAND) {
             const payload = createMoveTilesEvent(event, LOCATION_HAND);
             dispatch(payload.eventName, payload);
@@ -21,7 +20,7 @@
 
 </script>
 
-<div id="playerHand" class="w-3/4 h-2/5 border border-blue-300"
+<div id="playerHand" class="flex flex-row flex-wrap items-stretch w-3/4 h-2/5 my-1 p-2 border-2 border-blue-300 rounded-md"
     on:drop={eventMoveTilesToHand}
      on:dragover={eventDragOver}>
     {#each [...hand] as [id, tileSet]}

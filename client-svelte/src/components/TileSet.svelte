@@ -1,59 +1,80 @@
 <script>
+    import { createEventDispatcher, onDestroy } from 'svelte';
+    import { fade, scale } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
     import Tile from "./Tile.svelte";
-    import { createEventDispatcher } from 'svelte';
+    import { dragging } from "../stores/dragTiles.js";
     import { TILESET_DATA_TYPE, TILESET_SOURCE_LOCATION_TYPE } from "../utils/GameUtils.js";
 
     const dispatch = createEventDispatcher();
 
+    const LEFT = 'left';
+    const RIGHT = 'right';
     const ZONE_DRAG = ">drag";
     const ZONE_MERGE = ">merge-";
-    const ZONE_MERGE_LEFT = ZONE_MERGE + "left";
-    const ZONE_MERGE_RIGHT = ZONE_MERGE + "right";
+    const ZONE_MERGE_LEFT = ZONE_MERGE + LEFT;
+    const ZONE_MERGE_RIGHT = ZONE_MERGE + RIGHT;
     const ZONE_SPLIT = ">split-";
 
     export let tileSet;
     export let location;
+    let busyDragging = false;
+    let dragSelf = false;
+    let showSplitZones = false;
+    $: showMergeZones = busyDragging && !dragSelf;
 
-    function showMergeZones() {
-        let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"'");
-        elements.forEach((element)=>element.style.display = "inline");
-    }
-    function hideMergeZones() {
-        let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"");
-        elements.forEach((element)=>element.style.display = "none");
-    }
+    const unsubscribeDragging = dragging.subscribe(value => {
+        busyDragging = value;
+    });
+
+    onDestroy(unsubscribeDragging);
+
+    // function showMergeZones() {
+    //     dragging.set(true);
+    //     dragSelf = true;
+    //     // let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"'");
+    //     // elements.forEach((element)=>element.style.display = "inline");
+    // }
+    //
+    // function hideMergeZones() {
+    //     dragging.set(false);
+    //     dragSelf = false;
+    //     // let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"'");
+    //     // elements.forEach((element)=>element.style.display = "none");
+    // }
 
     function eventDragStart(event, tileSetId) {
-        console.log("eventDragStart: " + tileSetId);
         event.dataTransfer.setData(TILESET_DATA_TYPE, tileSetId);
         event.dataTransfer.setData(TILESET_SOURCE_LOCATION_TYPE, location);
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.dropEffect = "move";
-        showMergeZones();
+
+        showSplitZones = false;
+        dragging.set(true);
+        dragSelf = true;
     }
 
     function eventDragEnd(event, tileSetId) {
-        console.log("eventDragEnd: " + tileSetId);
-        hideMergeZones();
+        event.preventDefault();
+
+        showSplitZones = false;
+        dragging.set(false);
+        dragSelf = false;
     }
 
     function eventDragOver(event, tileSetId) {
-        console.log("eventDragOver: " + tileSetId);
-        console.log("eventDragOver onto: " + event.target);
         event.preventDefault();
     }
 
     function eventHoverStart(event, tileSetId) {
-        let elements = document.querySelectorAll("[id^='"+tileSetId+ZONE_SPLIT+"'");
-        elements.forEach((element)=>element.style.display = "inline");
+        if (!dragSelf)
+            showSplitZones = true;
     }
     function eventHoverEnd(event, tileSetId) {
-        let elements = document.querySelectorAll("[id^='"+tileSetId+ZONE_SPLIT+"'");
-        elements.forEach((element)=>element.style.display = "none");
+        showSplitZones = false;
     }
 
     function eventDropMerge(event, tileSetId, side) {
-        console.log("eventDropMerge: " + tileSetId);
         if (event.dataTransfer.types.includes(TILESET_DATA_TYPE)) {
             event.preventDefault();
             event.stopPropagation();
@@ -74,17 +95,16 @@
                 location: location
             });
         }
-        hideMergeZones();
     }
 
     function eventClickSplit(event, tileSetId, index) {
-        console.log("eventClickSplit: " + tileSetId);
         event.preventDefault();
         dispatch('split', {
             id: tileSetId,
             index: index,
             location: location
         });
+        console.log("eventClicksplit");
     }
 
 </script>
@@ -94,22 +114,50 @@
      on:dragend={(event)=>eventDragEnd(event, tileSet.id)}
      on:mouseover={(event)=>eventHoverStart(event, tileSet.id)}
      on:mouseout={(event)=>eventHoverEnd(event, tileSet.id)}
-     class:bg-red-200={!tileSet.isValid}
-     class="inline-flex border p-2 hover:border-black">
-    <div id={tileSet.id+ZONE_MERGE_LEFT}
-         on:drop={(event)=>eventDropMerge(event, tileSet.id, 'left')}
-         on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-         class="hidden max-w-10 border p-2 hover:bg-blue-100">&nbsp;</div>
+     on:mousemove={()=>{showSplitZones = true;}}
+     class:bg-red-100="{!tileSet.isValid}"
+     class="relative flex-none flex px-2 py-1 mx-2 my-1 z-20">
+    {#if showMergeZones }
+        <div id={tileSet.id+ZONE_MERGE_LEFT} class="merge-zone-l"
+             on:drop={(event)=>eventDropMerge(event, tileSet.id, 'left')}
+             on:dragover={(event)=>eventDragOver(event, tileSet.id)}>&nbsp;</div>
+        <div id={tileSet.id+ZONE_MERGE_RIGHT} class="merge-zone-r"
+             on:drop={(event)=>eventDropMerge(event, tileSet.id, 'right')}
+             on:dragover={(event)=>eventDragOver(event, tileSet.id)}>&nbsp;</div>
+    {/if}
     {#each tileSet.tiles as tile, i}
         <Tile {tile}></Tile>
-        {#if i < (tileSet.tiles.length - 1)}
-            <div id={tileSet.id+ZONE_SPLIT + (i+1)}
-                 on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}
-                 class="hidden max-w-10 border-1 border p-2 hover:bg-gray-200">&nbsp;</div>
-        {/if}
     {/each}
-    <div id={tileSet.id+ZONE_MERGE_RIGHT}
-         on:drop={(event)=>eventDropMerge(event, tileSet.id, 'right')}
-         on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-         class="hidden max-w-10 border-1 border p-2">&nbsp;</div>
+    <div class="split-zones-container px-4">
+        {#each tileSet.tiles as tile, i}
+            {#if i < (tileSet.tiles.length - 1)}
+                <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full hover:bg-gray-400 z-10"
+                     class:hidden="{!showSplitZones}"
+                     in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}"
+                     on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}>
+                    &nbsp;
+                </div>
+            {/if}
+        {/each}
+    </div>
 </div>
+
+<style>
+    .split-zones-container {
+        @apply absolute h-full w-full flex flex-none justify-evenly;
+        left:0px;
+        top:0px;
+    }
+    .merge-zone-l {
+        @apply absolute h-full w-5 px-1 border bg-gray-400 opacity-50 z-10;
+        left:0px;
+        top:0px;
+    }
+    .merge-zone-r {
+        @apply absolute h-full w-5 px-1 border bg-gray-400 opacity-50 z-10;
+        right:0px;
+        top:0px;
+    }
+</style>
+
+<!--flex flex-no-wrap items-start-->

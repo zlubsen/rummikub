@@ -8,7 +8,6 @@
     export let table;
 
     function eventMoveTilesToTable(event) {
-        console.log("eventMoveTilesToTable");
         if (event.dataTransfer.getData(TILESET_SOURCE_LOCATION_TYPE)!==LOCATION_TABLE) {
             const payload = createMoveTilesEvent(event, LOCATION_TABLE);
             dispatch(payload.eventName, payload);
@@ -24,8 +23,7 @@
 <div id="gameBoard"
         on:drop={eventMoveTilesToTable}
         on:dragover={eventDragOver}
-        class="w-3/4 h-3/5 border border-blue-300">
-    The board:
+        class="flex flex-row flex-wrap w-3/4 h-3/5 my-1 p-2 border-2 border-blue-300 rounded-md">
     {#each [...table] as [id, tileSet]}
         <TileSet {tileSet} location="TABLE" on:merge on:split></TileSet>
     {/each}

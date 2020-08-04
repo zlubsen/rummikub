@@ -201,68 +201,84 @@
         // TODO cleanup client state
     }
 
-    // let game = {
-    // 	gameName : "game1",
-    // 	currentPlayer : "player1",
-    // 	board : [
-    // 		{
-    // 			id: "xxsdf1",
-    // 			tiles : [
-    // 				{color : "gray", number : "8", isJoker: false},
-    // 				{color : "gray", number : "9", isJoker: false},
-    // 				{color : "gray", number : "10", isJoker: false}
-    // 			]
-    // 		},
-    // 		{
-    // 			id: "ldjfb5",
-    // 			tiles : [
-    // 				{color : "blue", number : "1", isJoker: false},
-    // 				{color : "yellow", number : "1", isJoker: false},
-    // 				{color : "gray", number : "1", isJoker: false}
-    // 			]
-    // 		},
-    // 		{
-    // 			id: "sdlkg4",
-    // 			tiles : [
-    // 				{color : "blue", number : "8", isJoker: false},
-    // 				{color : "gray", number : "3", isJoker: false},
-    // 				{color : "red", number : "10", isJoker: false},
-    // 				{color : "red", number : "10", isJoker: true}
-    // 			]
-    // 		}
-    // 	]
-    // };
-    // hand.set("xxsdf1",
-    // 	{
-    // 		id: "xxsdf1",
-    // 		tiles : [
-    // 			{color : "gray", number : "8", isJoker: false},
-    // 			{color : "gray", number : "9", isJoker: false},
-    // 			{color : "gray", number : "10", isJoker: false}
-    // 		],
-    //         isValid:"true"
-    // 	});
-    // hand.set("ldjfb5",
-    // 	{
-    // 		id: "ldjfb5",
-    // 		tiles : [
-    // 			{color : "blue", number : "1", isJoker: false},
-    // 			{color : "yellow", number : "1", isJoker: false},
-    // 			{color : "gray", number : "1", isJoker: false}
-    // 		],
-    //         isValid:"true"
-    // 	});
-    // hand.set("sdlkg4",
-    // 	{
-    // 		id: "sdlkg4",
-    // 		tiles : [
-    // 			{color : "blue", number : "8", isJoker: false},
-    // 			{color : "gray", number : "3", isJoker: false},
-    // 			{color : "red", number : "10", isJoker: false},
-    // 			{color : "red", number : "10", isJoker: true}
-    // 		],
-    //         isValid:"false"
-    // 	});
+    let game = {
+    	gameName : "game1",
+    	currentPlayer : "player1",
+    	board : [
+    		{
+    			id: "xxsdf1",
+    			tiles : [
+    				{color : "gray", number : "8", isJoker: false},
+    				{color : "gray", number : "9", isJoker: false},
+    				{color : "gray", number : "10", isJoker: false}
+    			]
+    		},
+    		{
+    			id: "ldjfb5",
+    			tiles : [
+    				{color : "blue", number : "1", isJoker: false},
+    				{color : "yellow", number : "1", isJoker: false},
+    				{color : "gray", number : "1", isJoker: false}
+    			]
+    		},
+    		{
+    			id: "sdlkg4",
+    			tiles : [
+    				{color : "blue", number : "8", isJoker: false},
+    				{color : "gray", number : "3", isJoker: false},
+    				{color : "red", number : "10", isJoker: false},
+    				{color : "red", number : "10", isJoker: true}
+    			]
+    		}
+    	]
+    };
+
+    hand.set("xxsdf1",
+    	{
+    		id: "xxsdf1",
+    		tiles : [
+    			{color : "BLACK", number : "8", isJoker: false},
+    			{color : "BLACK", number : "9", isJoker: false},
+    			{color : "BLACK", number : "10", isJoker: false}
+    		],
+            isValid:true
+    	});
+    hand.set("ldjfb5",
+    	{
+    		id: "ldjfb5",
+    		tiles : [
+    			{color : "BLUE", number : "1", isJoker: false},
+    			{color : "YELLOW", number : "1", isJoker: false},
+    			{color : "BLACK", number : "1", isJoker: false}
+    		],
+            isValid:true
+    	});
+    hand.set("sdlkg4",
+    	{
+    		id: "sdlkg4",
+    		tiles : [
+    			{color : "BLUE", number : "8", isJoker: false},
+    			{color : "BLACK", number : "3", isJoker: false},
+    			{color : "RED", number : "10", isJoker: false},
+    			{color : "RED", number : "10", isJoker: true}
+    		],
+            isValid:false
+    	});
+    hand.set("livnr5",
+            {
+                id: "livnr5",
+                tiles : [
+                    {color : "BLUE", number : "6", isJoker: false},
+                    {color : "BLUE", number : "7", isJoker: false},
+                    {color : "BLUE", number : "8", isJoker: false},
+                    {color : "BLUE", number : "9", isJoker: false},
+                    {color : "BLUE", number : "10", isJoker: false},
+                    {color : "BLUE", number : "11", isJoker: false},
+                    {color : "BLUE", number : "12", isJoker: false},
+                    {color : "BLUE", number : "13", isJoker: false},
+                ],
+                isValid:true
+            });
 
     function eventJoin(event) {
         playerName = event.detail.playerName;
@@ -318,12 +334,10 @@
     }
 
     function eventEndTurn(event) {
-        console.log("eventEndTurn");
         connection.sendJson(IDL.msgEndTurn(playerId, currentGame));
     }
 
     function eventTakeFromHeap(event) {
-        console.log("eventTakeFromHeap");
         connection.sendJson(IDL.msgTakeFromHeap(playerId, currentGame));
     }
 
@@ -336,8 +350,8 @@
     }
 </script>
 
-<main>
-    <header id="header" class="border border-blue-300 rounded m-1 p-3">
+<main class="h-full">
+    <header id="header" class="min-w-full h-16 border border-blue-300 rounded m-1 p-3">
         <span class="bold">Welcome to Rummikub!</span>
         {#if playerName}
             <span class="pl-2 pr-2">Player: {playerName}</span>
@@ -347,7 +361,7 @@
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
-    <section id="game" class="flex flex-wrap m-1">
+    <section id="game" class="min-h-64 flex flex-wrap m-1">
             <GameBoard table="{table}"
                 on:merge={eventMerge}
                 on:split={eventSplit}
@@ -370,7 +384,7 @@
                 on:takeFromHeap={eventTakeFromHeap}
             />
     </section>
-    <footer id="footer" class="min-w-full">
+    <footer id="footer" class="min-w-full h-8 border border-blue-300 rounded m-1 p-3">
         {#if logMessage}
             {logMessage}
         {/if}
@@ -381,6 +395,9 @@
         <button on:click={clickRequestPlayers}>Request Players</button>
     </div>
 </main>
+
+<style>
+</style>
 
 <!-- TODO show/hide buttons and such based on gamestate -->
 <!-- V UX: move tiles from same location: do not send message to server; make it impossible-->

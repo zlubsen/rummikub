@@ -25,7 +25,7 @@
 
 <div id="registerPlayer" class="inline float-right">
     {#if playerId === undefined }
-        <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName}>
+        <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName} class="form-input">
         <button id="connectButton" on:click={clickConnect}>Join lounge</button>
     {:else}
         <button id="disconnectButton" on:click={clickDisconnect}>Leave lounge</button>

@@ -52,7 +52,7 @@
 
 <div id="gameList" class="w-1/4">
     <ul>
-        <select id="games" size="10" bind:value={selectedGame} class="w-20">
+        <select id="games" size="10" bind:value={selectedGame} class="form-multiselect w-20">
         {#each [...games] as [id, game]}
             <option value="{game.gameName}">{game.gameName}</option>
         {/each}
@@ -71,7 +71,7 @@
         {:else}
             <button id="joinGameButton" on:click={clickJoinGame} disabled="{currentGame}">Join Game</button><br/>
 
-            <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName}>
+            <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} class="form-input">
             <button id="createGameButton" on:click={clickCreateGame}>Create game</button>
         {/if}
 

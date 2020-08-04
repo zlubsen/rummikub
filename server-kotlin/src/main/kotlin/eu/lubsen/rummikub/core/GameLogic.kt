@@ -358,7 +358,7 @@ fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
 
 }
 
-// TODO player cannot win in inital turn
+// TODO player cannot win in initial turn
 fun playerEndsInitialTurn(game: Game) : Result<MoveResult> {
     return if (tileListValue(game.turn.tilesIntroduced) >= 30 && tableIsValid(game = game)) {
         game.getCurrentPlayer().initialPlay = true
