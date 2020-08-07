@@ -350,7 +350,7 @@
     }
 </script>
 
-<main class="h-full">
+<main class="h-screen">
     <header id="header" class="min-w-full h-16 border border-blue-300 rounded m-1 p-3">
         <span class="bold">Welcome to Rummikub!</span>
         {#if playerName}
@@ -361,7 +361,7 @@
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
-    <section id="game" class="min-h-64 flex flex-wrap m-1">
+    <section id="game" class="h- flex flex-wrap items-stretch m-1">
             <GameBoard table="{table}"
                 on:merge={eventMerge}
                 on:split={eventSplit}
@@ -406,3 +406,13 @@
 <!-- - tried to merge a set with a J, lost the set on the table (‘TileSet not found in TABLE.’), and also in the hand…-->
 <!-- - UX: merge fields stay visible when not dragging a tileset (dragEnd is not called)-->
 <!-- - Logic for checking victory conditions (check when moving / manipulating tiles, on end turn?)-->
+
+<!-- - splitzone wordt te hoog in board area-->
+<!-- - border bij hover over tileset mist-->
+<!-- - tileset op board wordt zonder actie gesplit… (clicked take from heap)-->
+<!-- - winning a game: logic determines the win, and does not notify/end the game. Clicking ‘End’ yields error because the game is already won.-->
+<!-- - what happens after a game is won? Return to lounge how?-->
+
+<!--UX:-->
+<!-- - merge in middle of a set (now only on head of tail)-->
+<!-- - move (hand to table) + merge in one action-->

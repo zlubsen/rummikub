@@ -23,7 +23,10 @@
 <div id="gameBoard"
         on:drop={eventMoveTilesToTable}
         on:dragover={eventDragOver}
-        class="flex flex-row flex-wrap w-3/4 h-3/5 my-1 p-2 border-2 border-blue-300 rounded-md">
+        class="flex flex-row flex-wrap flex-auto w-3/4 h-full my-1 p-2 border-2 border-blue-300 rounded-md">
+    {#if table.size === 0 }
+        No tiles are on the table.
+    {/if}
     {#each [...table] as [id, tileSet]}
         <TileSet {tileSet} location="TABLE" on:merge on:split></TileSet>
     {/each}

@@ -28,6 +28,7 @@
     "@tailwindcss/custom-forms": "^0.2.1"
   },
   "dependencies": {
-    "sirv-cli": "^1.0.3"
+    "sirv-cli": "^1.0.3",
+    "hammerjs": "^2.0.8"
   }
 }
