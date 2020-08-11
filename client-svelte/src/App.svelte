@@ -350,9 +350,9 @@
     }
 </script>
 
-<main class="h-screen">
-    <header id="header" class="min-w-full h-16 border border-blue-300 rounded m-1 p-3">
-        <span class="bold">Welcome to Rummikub!</span>
+<div id="fullscreen-container" class="flex flex-col min-h-screen">
+    <header id="header" class="flex-0 h-16 border border-blue-300 rounded mt-1 mx-1 p-3">
+        <span class="font-inter text-2xl text-blue-500">Welcome to Rummikub!</span>
         {#if playerName}
             <span class="pl-2 pr-2">Player: {playerName}</span>
         {/if}
@@ -361,12 +361,15 @@
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
-    <section id="game" class="h- flex flex-wrap items-stretch m-1">
+    <main id="game" class="overflow-scroll flex-auto flex flex-wrap items-stretch m-1">
+        <div class="flex-auto">
             <GameBoard table="{table}"
                 on:merge={eventMerge}
                 on:split={eventSplit}
                 on:moveTiles="{eventMoveTiles}"
             />
+        </div>
+        <div class="flex-none">
             <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}"
                 on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
                 on:createGame={eventCreateGame}
@@ -374,27 +377,34 @@
                 on:startGame={eventStartGame}
                 on:stopGame={eventStopGame}
             />
+        </div>
+        <div class="flex-auto">
             <PlayerHand hand="{hand}"
                 on:merge={eventMerge}
                 on:split={eventSplit}
                 on:moveTiles={eventMoveTiles}
             />
+        </div>
+        <div class="flex-none">
             <TurnControls {gameState} {isPlayersTurn}
                 on:endTurn={eventEndTurn}
                 on:takeFromHeap={eventTakeFromHeap}
             />
-    </section>
-    <footer id="footer" class="min-w-full h-8 border border-blue-300 rounded m-1 p-3">
+        </div>
+    </main>
+    <footer id="footer" class="flex-0 h-10 border border-blue-300 rounded m-1 p-2">
         {#if logMessage}
             {logMessage}
+        {:else}
+            Enter your name to start playing Rummikub
         {/if}
     </footer>
-
-    <div id="admin_section" class="my-2 mx-2 p-2">
-        <button on:click={clickRequestGames}>Request Games</button>
-        <button on:click={clickRequestPlayers}>Request Players</button>
-    </div>
-</main>
+</div>
+<!--    <div id="admin_section" class="my-2 mx-2 p-2">-->
+<!--        <button on:click={clickRequestGames}>Request Games</button>-->
+<!--        <button on:click={clickRequestPlayers}>Request Players</button>-->
+<!--    </div>-->
+<!--</main>-->
 
 <style>
 </style>

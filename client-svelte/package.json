@@ -25,7 +25,8 @@
     "svelte": "^3.23.2",
     "svelte-preprocess": "^3.9.12",
     "tailwindcss": "^1.4.6",
-    "@tailwindcss/custom-forms": "^0.2.1"
+    "@tailwindcss/custom-forms": "^0.2.1",
+    "tailwindcss-font-inter": "^1.0.8"
   },
   "dependencies": {
     "sirv-cli": "^1.0.3",

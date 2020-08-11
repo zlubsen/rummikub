@@ -20,7 +20,7 @@
 
 </script>
 
-<div id="playerHand" class="flex flex-row flex-wrap items-stretch w-3/4 h-48 my-1 p-2 border-2 border-blue-300 rounded-md"
+<div id="playerHand" class="flex flex-row flex-wrap items-stretch h-full bg-gray-100 p-2 border-2 border-blue-300 rounded-md"
     on:drop={eventMoveTilesToHand}
      on:dragover={eventDragOver}>
     {#each [...hand] as [id, tileSet]}

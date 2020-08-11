@@ -16,6 +16,13 @@ module.exports = {
       move: 'move',
       'ew-resize': 'ew-resize',
     },
+    flex: {
+      '0': '0 0 auto',
+      '1': '1 1 0%',
+      auto: '1 1 auto',
+      initial: '0 1 auto',
+      none: 'none',
+    },
     extend: {},
   },
   variants: {
@@ -26,5 +33,6 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/custom-forms'),
+    require('tailwindcss-font-inter')()
   ],
 }

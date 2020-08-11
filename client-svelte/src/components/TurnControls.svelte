@@ -17,12 +17,13 @@
     }
 </script>
 
-{#if gameState === "STARTED" }
-<div id="turnControls" class="w-1/4">
-    <button id="endTurnButton" disabled="{!isPlayersTurn}" on:click={clickEndTurn}>End Turn</button><br/>
-    <button id="takeFromHeapButton" disabled="{!isPlayersTurn}" on:click={clickTakeFromHeap}>Take from Heap</button><br/>
+<div id="turnControls" class="h-full p-1 bg-gray-100">
+Controls<br/>
+    {#if gameState === "STARTED" }
+        <button id="endTurnButton" disabled="{!isPlayersTurn}" on:click={clickEndTurn} class="form-input">End Turn</button><br/>
+        <button id="takeFromHeapButton" disabled="{!isPlayersTurn}" on:click={clickTakeFromHeap} class="form-input">Take from Heap</button><br/>
+    {/if}
 </div>
-{/if}
 
 <style>
 </style>
