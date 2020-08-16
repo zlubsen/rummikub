@@ -8,12 +8,8 @@
 
     const dispatch = createEventDispatcher();
 
-    const LEFT = 'left';
-    const RIGHT = 'right';
     const ZONE_DRAG = ">drag";
     const ZONE_MERGE = ">merge-";
-    const ZONE_MERGE_LEFT = ZONE_MERGE + LEFT;
-    const ZONE_MERGE_RIGHT = ZONE_MERGE + RIGHT;
     const ZONE_SPLIT = ">split-";
 
     export let tileSet;
@@ -28,20 +24,6 @@
     });
 
     onDestroy(unsubscribeDragging);
-
-    // function showMergeZones() {
-    //     dragging.set(true);
-    //     dragSelf = true;
-    //     // let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"'");
-    //     // elements.forEach((element)=>element.style.display = "inline");
-    // }
-    //
-    // function hideMergeZones() {
-    //     dragging.set(false);
-    //     dragSelf = false;
-    //     // let elements = document.querySelectorAll("[id*='"+ZONE_MERGE+"'");
-    //     // elements.forEach((element)=>element.style.display = "none");
-    // }
 
     function eventDragStart(event, tileSetId) {
         event.dataTransfer.setData(TILESET_DATA_TYPE, tileSetId);
@@ -74,24 +56,18 @@
         showSplitZones = false;
     }
 
-    function eventDropMerge(event, tileSetId, side) {
+    function eventDropMerge(event, tileSetId, index) {
         if (event.dataTransfer.types.includes(TILESET_DATA_TYPE)) {
             event.preventDefault();
             event.stopPropagation();
 
-            let leftId;
-            let rightId;
-            if(side==='left') {
-                leftId = event.dataTransfer.getData(TILESET_DATA_TYPE);
-                rightId = tileSetId;
-            } else {
-                leftId = tileSetId;
-                rightId = event.dataTransfer.getData(TILESET_DATA_TYPE);
-            }
+            let sourceId = event.dataTransfer.getData(TILESET_DATA_TYPE);
+            let targetId = tileSetId;
 
             dispatch('merge', {
-                leftId: leftId,
-                rightId: rightId,
+                sourceId: sourceId,
+                targetId: targetId,
+                index: index,
                 location: location
             });
         }
@@ -104,7 +80,6 @@
             index: index,
             location: location
         });
-        console.log("eventClicksplit");
     }
 
 </script>
@@ -116,21 +91,25 @@
      on:mouseout={(event)=>eventHoverEnd(event, tileSet.id)}
      on:mousemove={()=>{showSplitZones = true;}}
      class:bg-red-100="{!tileSet.isValid}"
-     class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-gray-100 hover:cursor-pointer">
-    {#if showMergeZones }
-        <div id={tileSet.id+ZONE_MERGE_LEFT} class="merge-zone-l"
-             on:drop={(event)=>eventDropMerge(event, tileSet.id, 'left')}
-             on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-             in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
-        <div id={tileSet.id+ZONE_MERGE_RIGHT} class="merge-zone-r"
-             on:drop={(event)=>eventDropMerge(event, tileSet.id, 'right')}
-             on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-             in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
-    {/if}
+     class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-teal-200 hover:cursor-pointer">
+    <div class="merge-zones-container">
+            <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                 class:hidden="{!showMergeZones}"
+                 on:drop={(event)=>eventDropMerge(event, tileSet.id, 0)}
+                 on:dragover={(event)=>eventDragOver(event, tileSet.id)}
+                 in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
+            {#each tileSet.tiles as tile, i}
+                <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                     class:hidden="{!showMergeZones}"
+                     on:drop={(event)=>eventDropMerge(event, tileSet.id, i+1)}
+                     on:dragover={(event)=>eventDragOver(event, tileSet.id)}
+                     in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
+            {/each}
+    </div>
     {#each tileSet.tiles as tile, i}
         <Tile {tile}></Tile>
     {/each}
-    <div class="split-zones-container px-4">
+    <div class="split-zones-container">
         {#each tileSet.tiles as tile, i}
             {#if i < (tileSet.tiles.length - 1)}
                 <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full hover:bg-gray-400 hover:cursor-ew-resize"
@@ -146,20 +125,13 @@
 
 <style>
     .split-zones-container {
-        @apply absolute h-full w-full flex flex-none justify-evenly;
+        @apply absolute h-full w-full px-4 flex flex-none justify-evenly;
         left:0px;
         top:0px;
     }
-    .merge-zone-l {
-        @apply absolute h-full w-5 px-1 border bg-gray-400 opacity-50 z-10;
+    .merge-zones-container {
+        @apply absolute h-full w-full flex flex-none justify-between;
         left:0px;
-        top:0px;
-    }
-    .merge-zone-r {
-        @apply absolute h-full w-5 px-1 border bg-gray-400 opacity-50 z-10;
-        right:0px;
         top:0px;
     }
 </style>
-
-<!--flex flex-no-wrap items-start-->

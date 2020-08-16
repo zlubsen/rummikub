@@ -24,7 +24,7 @@ fun joinGame(game: Game, player: Player) : Result<ServerMessage> {
 
 fun leaveGame(game: Game, player: Player) : Result<ServerMessage> {
     // TODO add possibility for leaving an ongoing game
-    return if (GameState.JOINING == game.gameState) {
+    return if (GameState.STARTED != game.gameState) {
         game.players.remove(player.id)
         Success(
             PlayerLeftGame(eventNumber = 0, game = game, player = player)
@@ -129,11 +129,21 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                 Success(listOf(message))
             }
             is TurnEnded -> {
-                val message : ServerMessage = PlayedTurnEnded(
+                val items = mutableListOf<ServerMessage>()
+                items.add(PlayedTurnEnded(
                     eventNumber = 0,
                     move = result.result() as TurnEnded
+                ).addRecipient(recipients = game.players.keys))
+                items.addAll(game.players.values
+                    .map {
+                        GameStateResponse(eventNumber = 0, game = game, player = it)
+                            .addRecipient(recipient = it.id) })
+                Success(items.toList())
+            }
+            is PlayerWins -> {
+                Success(listOf(
+                    GameFinished(eventNumber = 0, game = game).addRecipient(recipients = game.players.keys))
                 )
-                Success(listOf(message.addRecipient(recipients = game.players.keys)))
             }
             is MoveOk -> {
                 val messages : List<ServerMessage> = when ((result.result() as MoveOk).type) {
@@ -187,9 +197,9 @@ fun gameHasValidNoOfPlayers(game: Game) : Boolean {
 }
 
 fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
-    return if (game.heap.isNotEmpty()) {
-        endAndResetTurn(game = game)
+    endAndResetTurn(game = game)
 
+    return if (game.heap.isNotEmpty()) {
         val tile: Tile = game.heap.random()
         game.heap.remove(element = tile)
         val tileSet = player.tileToHand(tile = tile)
@@ -202,7 +212,6 @@ fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
             newLocation = MoveLocation.HAND))
     } else {
         // heap is empty
-        endAndResetTurn(game = game)
         Success(
             value = TurnEnded(
                 type = MoveType.END_TURN,
@@ -254,8 +263,8 @@ fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<
 }
 
 fun splitTileSet(move : Move) : Result<MoveResult> {
-    val tileSetId = move.splitSetId
-    val index : Int = move.splitIndex
+    val tileSetId = move.sourceSetId
+    val index : Int = move.operationIndex
 
     val location = when (move.moveLocation) {
         MoveLocation.TABLE -> move.game.table
@@ -294,20 +303,22 @@ fun mergeTileSets(move: Move) : Result<MoveResult> {
         MoveLocation.HAND -> move.player.hand
         MoveLocation.NONE -> return Failure("Incorrect move location set.")
     }
-    val newSet = location[move.leftMergeId]?.let { location[move.rightMergeId]?.let { it1 -> merge(left = it, right = it1) } }
-    location.remove(move.leftMergeId)
-    location.remove(move.rightMergeId)
+    val newSet = location[move.sourceSetId]?.let {
+        location[move.targetSetId]?.let {
+                it1 -> merge(source = it, target = it1, index = move.operationIndex) } }
+    location.remove(move.sourceSetId)
+    location.remove(move.targetSetId)
     location[newSet!!.id] = newSet
-    move.game.tileSets.remove(move.leftMergeId)
-    move.game.tileSets.remove(move.rightMergeId)
+    move.game.tileSets.remove(move.sourceSetId)
+    move.game.tileSets.remove(move.targetSetId)
     move.game.tileSets[newSet.id] = newSet
 
     return Success(
         value = TilesMerged(
             type = MoveType.MERGE,
             playerId = move.player.id,
-            leftId = move.leftMergeId,
-            rightId = move.rightMergeId,
+            sourceId = move.sourceSetId,
+            targetId = move.targetSetId,
             mergedSet = newSet,
             location = move.moveLocation
         )
@@ -322,38 +333,43 @@ fun split(tileSet : TileSet, index : Int) : List<TileSet> {
     return listOf(head, tail)
 }
 
-fun merge(left: TileSet, right : TileSet) : TileSet {
+fun merge(source: TileSet, target : TileSet, index: Int) : TileSet {
     val tiles = mutableListOf<Tile>()
-    tiles.addAll(elements = left.tiles)
-    tiles.addAll(elements = right.tiles)
+    tiles.addAll(elements = target.tiles)
+    tiles.addAll(index = index, elements = source.tiles)
     return TileSet(tiles)
 }
 
 fun playerEndsTurn(game: Game, player: Player) : Result<MoveResult> {
-    // check if the player played tiles
     if (!playerHasInitialPlay(player = player)
-        && !playerHasPlayedInTurn(game = game, player = player))
+        && !playerHasPlayedInTurn(game = game, player = player)
+    )
         return Failure(reason = "Player did not play any tiles or met initial play value.")
 
-    val playerWon = hasPlayerWon(game = game, player = player)
+    if (hasPlayerWon(game = game, player = player)) {
+        playerWins(game = game)
+        return Success(value = PlayerWins(type = MoveType.END_TURN, playerId = player.id))
+    }
+
     val hasPlayed = playerHasPlayedInTurn(game = game, player = player)
     val tableIsValid = tableIsValid(game = game)
 
-    return if(!playerWon
-        && hasPlayed
-        && tableIsValid) {
+    return if (hasPlayed
+        && tableIsValid
+    ) {
         endTurn(game = game)
-        Success(value = TurnEnded(
-            type = MoveType.END_TURN,
-            playerId = player.id,
-            nextPlayerId = game.getCurrentPlayer().id))
+        Success(
+            value = TurnEnded(
+                type = MoveType.END_TURN,
+                playerId = player.id,
+                nextPlayerId = game.getCurrentPlayer().id
+            )
+        )
     } else {
         if (!hasPlayed)
             Failure("Cannot end turn, player did not play tiles to the table.")
-        else if (!tableIsValid)
+        else// if (!tableIsValid)
             Failure("Cannot end turn, table contains invalid melds.")
-        else
-            Failure("Game logic thinks player ${player.playerName} already won.")
     }
 
 }
@@ -394,6 +410,10 @@ fun endTurn(game: Game) {
     game.setTurn()
 }
 
+fun playerWins(game: Game) {
+    game.gameState = GameState.FINISHED
+}
+
 // TODO test function
 fun hasPlayerWon(game: Game, player: Player) : Boolean {
     val allValid = game.table.isNotEmpty()
@@ -424,7 +444,7 @@ fun playerCanArrangeHand(move: Move) : Result<Boolean> {
             && (move.moveLocation == MoveLocation.HAND))
         Success(value = true)
     else
-        Failure(reason = "Player cannot arrange table when not the current player.")
+        Failure(reason = "Player cannot arrange table when not the current player, or did not met initial play value.")
 }
 
 fun playerIsInGame(game: Game, player : Player) : Boolean {

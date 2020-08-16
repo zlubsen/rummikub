@@ -22,7 +22,7 @@
 <div id="gameBoard"
         on:drop={eventMoveTilesToTable}
         on:dragover={eventDragOver}
-        class="tile-panel">
+        class="flex flex-row flex-wrap content-start overflow-y-scroll h-full">
     {#if table.size === 0 }
         <span class="text-xl text-gray-400">No tiles are on the table.</span>
     {/if}

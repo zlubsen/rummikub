@@ -93,20 +93,31 @@ internal class GameLogicTest {
     }
 
     @Test
-    fun merge() {
-        val left = parseTileSet("Bla1")
-        val right = parseTileSet("Bla2-Bla3")
-        val merged = merge(left, right)
+    fun mergeAtStart() {
+        val source = parseTileSet("Bla1")
+        val target = parseTileSet("Bla2-Bla3")
+        val index = 0
+        val merged = merge(source = source, target = target, index = index)
+        assertEquals(parseTileSet("Bla1-Bla2-Bla3"), merged)
+    }
+
+    @Test
+    fun mergeAtIndex() {
+        val source = parseTileSet("Bla2")
+        val target = parseTileSet("Bla1-Bla3")
+        val index = 1
+        val merged = merge(source = source, target = target, index = index)
         assertEquals(parseTileSet("Bla1-Bla2-Bla3"), merged)
     }
 
     @Test
     fun mergeWithEmpty() {
-        val left = TileSet(listOf())
-        val right = parseTileSet("Yel10-Yel11")
-        val merged = merge(left, right)
+        val source = TileSet(listOf())
+        val target = parseTileSet("Yel10-Yel11")
+        val index = 0
+        val merged = merge(source = source, target = target, index = index)
         assertEquals(parseTileSet("Yel10-Yel11"), merged)
-        assertNotEquals(right.id, merged.id)
+        assertNotEquals(source.id, merged.id)
     }
 
     @Test
@@ -374,5 +385,65 @@ internal class GameLogicTest {
         val input = "Bla6-Blu6-Red6-J"
         val tileSet = parseTileSet(input)
         assertEquals(6 + 6 + 6 + 6, tileSetValue(tileSet))
+    }
+
+    @Test
+    fun tableIsActuallyValid() {
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("validTableTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        startGameWith(game = game,
+            tableTiles = listOf(parseTileSet("Bla1-Bla2-Bla3"), parseTileSet("Blu1-Blu2-Blu3")),
+            playerOneHand = listOf(),
+            playerTwoHand = listOf(),
+            heap = listOf())
+
+        assertTrue(tableIsValid(game = game))
+    }
+
+    @Test
+    fun tableIsValidButEmpty() {
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("validEmptyTableTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        startGameWith(game = game,
+            tableTiles = listOf(),
+            playerOneHand = listOf(),
+            playerTwoHand = listOf(),
+            heap = listOf())
+
+        assertTrue(tableIsValid(game = game))
+    }
+
+    @Test
+    fun tableIsNotValid() {
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("invalidTableTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        startGameWith(game = game,
+            tableTiles = listOf(parseTileSet("Bla1-Blu2-Red3")),
+            playerOneHand = listOf(),
+            playerTwoHand = listOf(),
+            heap = listOf())
+
+        assertFalse(tableIsValid(game = game))
     }
 }

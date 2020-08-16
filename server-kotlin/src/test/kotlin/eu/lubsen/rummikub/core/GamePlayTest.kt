@@ -1,7 +1,6 @@
 package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.idl.server.PlayedTookFromHeap
-import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.idl.server.ServerMessageType
 import eu.lubsen.rummikub.model.*
 import eu.lubsen.rummikub.util.Failure
@@ -102,7 +101,7 @@ internal class GamePlayTest {
 
         val move = Move(game, player1, MoveType.MERGE)
         move.moveLocation = MoveLocation.HAND
-        move.setMerger(MoveLocation.HAND, player1.hand.values.elementAt(0).id, player1.hand.values.elementAt(1).id)
+        move.setMerger(MoveLocation.HAND, player1.hand.values.elementAt(0).id, player1.hand.values.elementAt(1).id, 0)
         val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
 
         assertTrue(result.isSuccess())
@@ -146,6 +145,36 @@ internal class GamePlayTest {
         assertTrue(tableIsValid(game = game))
         val messages = (result as Success).result()
         assertEquals(ServerMessageType.PlayedTurnEnded, messages[0].type)
+    }
+
+    @Test
+    fun playerEndsTurnAndWins() {
+        val player1 = Player("winner")
+        val player2 = Player("loser")
+        val game = Game("winTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        startGameWith(game = game,
+            tableTiles = listOf(parseTileSet("Bla1-Bla2-Bla3"), parseTileSet("Blu1-Blu2-Blu3")),
+            playerOneHand = listOf(parseTileSet("Red1-Red2-Red3")),
+            playerTwoHand = listOf(parseTileSet("Yel1"), parseTileSet("Bla5")),
+            heap = listOf(Tile(type = TileType.REGULAR, color = TileColor.RED, number = TileNumber.TEN)))
+
+        val move = Move(game, player1, MoveType.HAND_TO_TABLE)
+        move.tilesToRelocate = player1.hand.values.first().id
+        handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
+        val endMove = Move(game, player1, MoveType.END_TURN)
+        val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = endMove)
+
+        assertTrue(result.isSuccess())
+        assertEquals(expected = GameState.FINISHED, actual = game.gameState)
+        assertTrue(tableIsValid(game = game))
+        val messages = (result as Success).result()
+        assertEquals(ServerMessageType.GameFinished, messages[0].type)
     }
 
     @Test

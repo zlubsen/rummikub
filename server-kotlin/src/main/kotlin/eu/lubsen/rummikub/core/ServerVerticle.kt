@@ -32,11 +32,6 @@ class ServerVerticle : AbstractVerticle() {
         server.requestHandler(router).listen(8080)
 
         println("Server running")
-
-//        heartbeatTimer = timer("heartbeat",false,0,2000) {
-//            for ((id, socket) in clientSockets) {
-//                if(!socket.isClosed) socket.writeTextMessage(System.currentTimeMillis().toString())}
-//            }
     }
 
     private fun handleRoot(context: RoutingContext) {
@@ -61,7 +56,24 @@ class ServerVerticle : AbstractVerticle() {
             }
             if (playerId != null) {
                 clientSockets.remove(key = playerId!!)
-                playerDisconnects(lounge = lounge, player = lounge.players[playerId!!]!!)
+
+                when (val gameResult = findGameForPlayer(lounge = lounge, player = lounge.players[playerId!!]!!)) {
+                    is Success -> {
+                        val game = gameResult.result()
+                        when (val message = playerDisconnects(lounge = lounge, player = lounge.players[playerId!!]!!)) {
+                            is Success -> {
+                                sendMessage(message.result().addRecipient(game.players.keys))
+                            }
+                            is Failure -> {
+                                sendMessage(MessageResponse(
+                                    eventNumber = 0,
+                                    message = "A player disconnected, but something went wrong in handling it")
+                                    .addRecipient(recipients = game.players.keys))
+                            }
+                        }
+                    }
+                    is Failure -> { }
+                }
             }
         }
 

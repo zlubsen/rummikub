@@ -17,7 +17,7 @@
     }
 </script>
 
-<div id="turnControls" class="h-full p-1 bg-gray-100">
+<div id="turnControls" class="h-full p-1 border-l-2 border-b-2 border-t-2 bg-gray-100">
 Controls<br/>
     {#if gameState === "STARTED" }
         <button id="endTurnButton" disabled="{!isPlayersTurn}" on:click={clickEndTurn} class="form-input">End Turn</button><br/>

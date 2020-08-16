@@ -38,16 +38,17 @@ fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
         }
         MoveType.SPLIT -> {
             move.setSplit(
-                MoveLocation.valueOf(json.getString("moveLocation")),
-                UUID.fromString(json.getString("splitSetId")),
-                json.getInteger("splitIndex")
+                location = MoveLocation.valueOf(json.getString("moveLocation")),
+                tileSetId = UUID.fromString(json.getString("splitSetId")),
+                index = json.getInteger("splitIndex")
             )
         }
         MoveType.MERGE -> {
             move.setMerger(
-                MoveLocation.valueOf(json.getString("moveLocation")),
-                UUID.fromString(json.getString("leftMergeId")),
-                UUID.fromString(json.getString("rightMergeId"))
+                location = MoveLocation.valueOf(json.getString("moveLocation")),
+                sourceId = UUID.fromString(json.getString("sourceId")),
+                targetId = UUID.fromString(json.getString("targetId")),
+                index = json.getInteger("index")
             )
         }
         MoveType.TAKE_FROM_HEAP -> {}

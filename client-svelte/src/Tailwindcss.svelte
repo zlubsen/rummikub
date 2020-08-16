@@ -7,8 +7,4 @@
     body {
         padding:0px;
     }
-
-    tile-panel {
-        @apply flex flex-row flex-wrap items-start h-full p-2;
-    }
 </style>

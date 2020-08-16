@@ -186,6 +186,7 @@ class GameFinished constructor(eventNumber : Long, val game: Game) : ServerMessa
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "gameName" : "${game.name}",
+                "gameState" : "${game.gameState}",
                 "winner" : "${game.getCurrentPlayer().id}"
             }
         """.trimIndent()
@@ -322,8 +323,8 @@ class PlayedTileSetsMerged constructor(eventNumber : Long, private val move : Ti
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "location" : "${move.location}",
-                "leftId" : "${move.leftId}",
-                "rightId" : "${move.rightId}",
+                "sourceId" : "${move.sourceId}",
+                "targetId" : "${move.targetId}",
                 "tileSet" : ${tileSetToJson(move.mergedSet)}
             }
         """.trimIndent()

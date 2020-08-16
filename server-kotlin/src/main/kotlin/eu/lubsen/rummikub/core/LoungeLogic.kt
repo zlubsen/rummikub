@@ -2,6 +2,7 @@ package eu.lubsen.rummikub.core
 
 import eu.lubsen.rummikub.idl.server.GameCreated
 import eu.lubsen.rummikub.idl.server.GameRemoved
+import eu.lubsen.rummikub.idl.server.PlayerDisconnected
 import eu.lubsen.rummikub.idl.server.ServerMessage
 import eu.lubsen.rummikub.model.Game
 import eu.lubsen.rummikub.model.Lounge
@@ -31,10 +32,13 @@ fun playerConnects(lounge: Lounge, player: Player) {
 }
 
 // TODO: how to handle a player dropping out of an ongoing game?
-fun playerDisconnects(lounge: Lounge, player: Player) {
+fun playerDisconnects(lounge: Lounge, player: Player) : Result<ServerMessage> {
     lounge.players.remove(key = player.id)
 
     lounge.games.values.forEach { it.players.remove(key = player.id) }
+
+    val message : ServerMessage = PlayerDisconnected(eventNumber = 0, player = player)
+    return Success(message)
 }
 
 fun createGame(lounge : Lounge, gameName : String, ownerId : UUID) : Result<ServerMessage> {
@@ -63,3 +67,11 @@ fun removeGame(lounge : Lounge, gameName : String) : Result<ServerMessage> {
     }
 }
 
+// TODO test
+fun findGameForPlayer(lounge: Lounge, player: Player) : Result<Game> {
+    val games = lounge.games.filter { (name,game) -> game.players.containsKey(player.id) }
+    return if (games.isNotEmpty())
+        Success(value = games.values.first())
+    else
+        Failure(reason = "Player has not joined any game.")
+}

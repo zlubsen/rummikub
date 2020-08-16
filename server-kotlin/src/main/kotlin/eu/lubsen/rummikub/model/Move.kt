@@ -3,22 +3,22 @@ package eu.lubsen.rummikub.model
 import java.util.UUID
 
 class Move constructor(val game: Game, val player : Player, val moveType: MoveType) {
-    var splitIndex : Int = 0
-    lateinit var splitSetId : UUID
-    lateinit var leftMergeId : UUID
-    lateinit var rightMergeId : UUID
+    var operationIndex : Int = 0
+    lateinit var sourceSetId : UUID
+    lateinit var targetSetId : UUID
     lateinit var tilesToRelocate : UUID
     var moveLocation = MoveLocation.NONE
 
     fun setSplit(location: MoveLocation, tileSetId: UUID, index : Int) {
         moveLocation = location
-        splitSetId = tileSetId
-        splitIndex = index
+        sourceSetId = tileSetId
+        operationIndex = index
     }
 
-    fun setMerger(location: MoveLocation, leftId : UUID, rightId : UUID) {
+    fun setMerger(location: MoveLocation, sourceId : UUID, targetId : UUID, index: Int) {
         moveLocation = location
-        leftMergeId = leftId
-        rightMergeId = rightId
+        sourceSetId = sourceId
+        targetSetId = targetId
+        operationIndex = index
     }
 }

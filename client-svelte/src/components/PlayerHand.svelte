@@ -20,9 +20,12 @@
 
 </script>
 
-<div id="playerHand" class="flex flex-row flex-wrap items-stretch h-full bg-gray-100 p-2 border-2 border-blue-300 rounded-md"
+<div id="playerHand" class="flex flex-row flex-wrap content-start h-full overflow-y-scroll bg-gray-100 p-2 border-2 border-blue-300 rounded-md"
     on:drop={eventMoveTilesToHand}
      on:dragover={eventDragOver}>
+    {#if hand.size === 0 }
+        <span class="text-xl text-gray-400">You have no tiles in hand.</span>
+    {/if}
     {#each [...hand] as [id, tileSet]}
         <TileSet {tileSet} location="HAND" on:merge on:split></TileSet>
     {/each}

@@ -69,14 +69,15 @@ function msgRequestGameState(playerId, gameId) {
     }
 }
 
-function msgMerge(playerId, gameId, leftId, rightId, location) {
+function msgMerge(playerId, gameId, sourceId, targetId, index, location) {
     return {
         messageType : "PlayerMove",
         moveType : "MERGE",
         playerId : playerId,
         gameId : gameId,
-        leftMergeId : leftId,
-        rightMergeId : rightId,
+        sourceId : sourceId,
+        targetId : targetId,
+        index : index,
         moveLocation : location
     }
 }
