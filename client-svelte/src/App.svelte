@@ -15,6 +15,8 @@
     $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
     $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === playerId;
 
+    let serverAddress = "ws://192.168.8.158:8080/join"
+
     let connection;
     let logMessage;
 
@@ -217,16 +219,16 @@
     //     console.log("beforeunload");
     //     return true;
     // };
-    window.addEventListener('beforeunload', (event) => {
-        console.log("preventing navigating away...");
-        // Cancel the event as stated by the standard.
-        event.preventDefault();
-        // Chrome requires returnValue to be set.
-        event.returnValue = 'If you navigate away, you close the session...';
-    });
+    // window.addEventListener('beforeunload', (event) => {
+    //     console.log("preventing navigating away...");
+    //     // Cancel the event as stated by the standard.
+    //     event.preventDefault();
+    //     // Chrome requires returnValue to be set.
+    //     event.returnValue = 'If you navigate away, you close the session...';
+    // });
 
     function eventJoin(event) {
-        connection = new Connection(undefined, event.detail.playerName, receiveHandler, closeHandler);
+        connection = new Connection(serverAddress, event.detail.playerName, receiveHandler, closeHandler);
     }
 
     function eventLeave(event) {
@@ -293,6 +295,19 @@
         connection.sendJson(IDL.msgRequestPlayerList(playerId));
     }
 
+    // games.set("Aap",
+    //     {
+    //         gameName:"Aap"
+    //     });
+    // games.set("Noot",
+    //     {
+    //         gameName:"Noot"
+    //     });
+    // games.set("Mies",
+    //     {
+    //         gameName:"Mies"
+    //     });
+    //
     // table.set("xxsdf1",
     //     {
     //         id: "xxsdf1",
@@ -386,9 +401,10 @@
     //         ],
     //         isValid:true
     //     });
+
 </script>
 
-<div id="fullscreen-container" class="flex flex-col min-h-screen">
+<div id="fullscreen-container" class="flex flex-col full-screen-app w-screen">
     <header id="header" class="flex-0 h-16 border border-blue-300 rounded mt-1 mx-1 p-3">
         <span class="font-inter text-2xl text-blue-500">Welcome to Rummikub!</span>
         {#if playerName}
@@ -399,8 +415,9 @@
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
-    <main id="game" class="flex-auto w-full h-full grid grid-cols-5 m-1">
-        <div class="relative col-span-4 box-border"
+    <main class="flex-auto min-h-full">
+        <div id="game" class="inline-block h-full w-full grid grid-cols-5 m-1">
+        <div class="col-span-4 box-border"
             class:active-player={isPlayersTurn}
             class:inactive-player={!isPlayersTurn}>
             <GameBoard table="{table}"
@@ -431,6 +448,7 @@
                 on:takeFromHeap={eventTakeFromHeap}
             />
         </div>
+        </div>
     </main>
     <footer id="footer" class="flex-0 h-10 border border-blue-300 rounded m-1 p-2">
         <span class="font-inter">
@@ -449,10 +467,26 @@
 <!--</main>-->
 
 <style>
+    .full-screen-app {
+        @apply min-h-screen w-screen;
+        min-height: -webkit-fill-available;
+    }
     #game {
-        /*grid-template-columns: auto 2fr;*/
         grid-template-rows: 55vh auto;
     }
+    /*#game {*/
+    /*    grid-template-areas:    'header header'*/
+    /*                            'board game'*/
+    /*                            'hand control'*/
+    /*                            'footer footer';*/
+    /*    grid-template-rows: 55vh auto;*/
+    /*}*/
+    /*header {*/
+    /*    grid-area: header;*/
+    /*}*/
+    /*footer {*/
+    /*    grid-area: footer;*/
+    /*}*/
     .active-player {
         @apply border-2 border-blue-300 rounded-md;
     }
@@ -499,4 +533,6 @@
 <!-- - sanitise formatting of tile names in message: ‘Not all tiles were in player's hand. Played: (…)’-->
 <!-- - player without initial play can split/merge tiles on the table-->
 
-<!-- - non-local browser can sign into lounge, but does not see the games (web sockets know the correct IP?)-->
+<!-- - Label for player name is not cleared correctly after clicking 'Leave lounge' button-->
+<!-- - grid layout of game area does not display correctly in safari/ipad-->
+<!-- - board area stretches with only one row of tiles. It looks correct when there are multiple rows.-->

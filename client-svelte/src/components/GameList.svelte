@@ -1,12 +1,13 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import SelectableList from "../components/SelectableList.svelte";
 
     const dispatch = createEventDispatcher();
 
     export let games;
     export let currentGame;
     export let playerId;
-    let selectedGame;
+    let selectedGame = "";
     let createGameName;
     $: isOwner = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).owner == playerId;
     $: currentIsStarted = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).gameState === "STARTED";
@@ -29,6 +30,7 @@
         dispatch('createGame', {
             gameName : createGameName
         });
+        createGameName = undefined;
     }
 
     function clickRemoveGame(event) {
@@ -51,11 +53,12 @@
 </script>
 
 <div id="gameList" class="border-l-2 border-t-2 bg-gray-100 h-full p-2">
-    <select id="games" size="10" bind:value={selectedGame} class="form-multiselect w-full block">
-    {#each [...games] as [id, game]}
-        <option value="{game.gameName}">{game.gameName}</option>
-    {/each}
-    </select>
+<!--    <select id="games" size="10" bind:value={selectedGame} class="form-multiselect w-full block">-->
+<!--    {#each [...games] as [id, game]}-->
+<!--        <option value="{game.gameName}">{game.gameName}</option>-->
+<!--    {/each}-->
+<!--    </select>-->
+    <SelectableList items="{[...games.values()]}" bind:selectedItem={selectedGame} />
     {#if currentGame }
         {#if isOwner }
             {#if currentIsStarted }

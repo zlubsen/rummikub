@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher, onDestroy } from 'svelte';
-    import { fade, scale } from 'svelte/transition';
+    import { scale } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
     import Tile from "./Tile.svelte";
     import { dragging } from "../stores/dragTiles.js";
@@ -14,6 +14,7 @@
 
     export let tileSet;
     export let location;
+
     let busyDragging = false;
     let dragSelf = false;
     let showSplitZones = false;
@@ -92,20 +93,21 @@
      on:mousemove={()=>{showSplitZones = true;}}
      class:bg-red-100="{!tileSet.isValid}"
      class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-teal-200 hover:cursor-pointer">
-    <div class="merge-zones-container">
-            <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10"
-                 class:hidden="{!showMergeZones}"
-                 on:drop={(event)=>eventDropMerge(event, tileSet.id, 0)}
-                 on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-                 in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
-            {#each tileSet.tiles as tile, i}
-                <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50 z-10"
-                     class:hidden="{!showMergeZones}"
-                     on:drop={(event)=>eventDropMerge(event, tileSet.id, i+1)}
+    {#if showMergeZones}
+        <div class="merge-zones-container">
+                <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                     on:drop={(event)=>eventDropMerge(event, tileSet.id, 0)}
                      on:dragover={(event)=>eventDragOver(event, tileSet.id)}
                      in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
-            {/each}
-    </div>
+                {#each tileSet.tiles as tile, i}
+                    <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                         on:drop={(event)=>eventDropMerge(event, tileSet.id, i+1)}
+                         on:dragover={(event)=>eventDragOver(event, tileSet.id)}
+                         in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
+                {/each}
+        </div>
+    {/if}
+<!--    class:hidden="{!showMergeZones}"-->
     {#each tileSet.tiles as tile, i}
         <Tile {tile}></Tile>
     {/each}
@@ -113,7 +115,7 @@
         {#each tileSet.tiles as tile, i}
             {#if i < (tileSet.tiles.length - 1)}
                 <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full hover:bg-gray-400 hover:cursor-ew-resize"
-                     class:hidden="{!showSplitZones}"
+                     class:hidden={!showSplitZones}
                      in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}"
                      on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}>
                     &nbsp;
