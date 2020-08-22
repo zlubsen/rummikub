@@ -66,25 +66,17 @@ fun tryMove(move: Move) : Result<MoveResult> {
     val allowedToArrange = playerCanArrange(move = move)
     val playedInitial = playerHasInitialPlay(player = move.player)
 
-    if (playedInitial) {
-        return when (move.moveType) {
-                MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = playerPutsTilesOnTable(
-                    game = move.game,
-                    player = move.player,
-                    tileSetId = move.tilesToRelocate
-                ))
-                MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(
-                    game = move.game,
-                    player = move.player,
-                    tileSetId = move.tilesToRelocate
-                ))
-                MoveType.SPLIT -> allowedToArrange.chain(next = splitTileSet(move = move))
-                MoveType.MERGE -> allowedToArrange.chain(next = mergeTileSets(move = move))
-                MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
-                MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsTurn(game = move.game, player = move.player))
-            }
+    return if (playedInitial) {
+        when (move.moveType) {
+            MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = ::playerPutsTilesOnTable, arg = move)
+            MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = ::playerPutsTilesInHand, arg = move)
+            MoveType.SPLIT -> allowedToArrange.chain(next = ::splitTileSet, arg = move)
+            MoveType.MERGE -> allowedToArrange.chain(next = ::mergeTileSets, arg = move)
+            MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = ::playerDrawsFromHeap, arg = move)
+            MoveType.END_TURN -> allowedToPlay.chain(next = ::playerEndsTurn, arg = move)
+        }
     } else
-        return tryInitialPlayMove(move = move)
+        tryInitialPlayMove(move = move)
 }
 
 fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
@@ -92,14 +84,28 @@ fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
     val arrangeHand = playerCanArrangeHand(move = move)
 
     return when (move.moveType) {
-        MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
-        MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate))
-        MoveType.SPLIT -> arrangeHand.chain(next = splitTileSet(move = move))
-        MoveType.MERGE -> arrangeHand.chain(next = mergeTileSets(move = move))
-        MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = playerDrawsFromHeap(game = move.game, player = move.player))
-        MoveType.END_TURN -> allowedToPlay.chain(next = playerEndsInitialTurn(game = move.game))
+        MoveType.HAND_TO_TABLE -> allowedToPlay.chain(next = ::playerPutsTilesOnTable, arg = move)
+        MoveType.TABLE_TO_HAND -> allowedToPlay.chain(next = ::playerPutsTilesInHand, arg = move)
+        MoveType.SPLIT -> arrangeHand.chain(next = ::splitTileSet, arg = move)
+        MoveType.MERGE -> arrangeHand.chain(next = ::mergeTileSets, arg = move)
+        MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = ::playerDrawsFromHeap, arg = move)
+        MoveType.END_TURN -> allowedToPlay.chain(next = ::playerEndsInitialTurn, arg = move)
     }
 }
+fun playerPutsTilesOnTable(move: Move) : Result<MoveResult> =
+    playerPutsTilesOnTable(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
+
+fun playerPutsTilesInHand(move: Move) : Result<MoveResult> =
+    playerPutsTilesInHand(game = move.game, player = move.player, tileSetId = move.tilesToRelocate)
+
+fun playerDrawsFromHeap(move: Move) : Result<MoveResult> =
+    playerDrawsFromHeap(game = move.game, player = move.player)
+
+fun playerEndsTurn(move: Move) : Result<MoveResult> =
+    playerEndsTurn(game = move.game, player = move.player)
+
+fun playerEndsInitialTurn(move: Move) : Result<MoveResult> =
+    playerEndsInitialTurn(game = move.game)
 
 fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMessage>> {
     return when(result) {

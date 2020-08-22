@@ -27,6 +27,7 @@ enum class ServerMessageType {
     MessageResponse,
     GameListResponse,
     PlayerListResponse,
+    PlayerListForGameResponse,
     GameStateResponse
 }
 
@@ -385,6 +386,27 @@ class PlayerListResponse constructor(eventNumber : Long, private val players : L
     }
 }
 
+class PlayerListForGameResponse constructor(eventNumber : Long, private val gameName : String, private val players : List<Player>) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.PlayerListForGameResponse
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "gameName" : "$gameName",
+                "players" : 
+                    ${players.joinToString(
+                        separator = ",",
+                        prefix = "[",
+                        postfix = "]")
+                        { playerToJson(it) }
+                }
+            }
+        """.trimIndent()
+    }
+}
+
 // TODO test message
 class GameStateResponse constructor(eventNumber: Long, private val game: Game, private val player: Player) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.GameStateResponse
@@ -408,7 +430,13 @@ class GameStateResponse constructor(eventNumber: Long, private val game: Game, p
                     prefix = "[",
                     postfix = "]")
                     { tileSetToJson(it) }
-                }
+                },
+                "players" : ${game.players.values.joinToString(
+                    separator = ",",
+                    prefix = "[",
+                    postfix = "]")
+                    { playerToJson(it) }
+                } 
             }
         """.trimIndent()
     }

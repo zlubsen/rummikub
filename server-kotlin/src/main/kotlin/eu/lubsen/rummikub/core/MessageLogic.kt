@@ -74,6 +74,16 @@ fun handleRequestPlayerList(lounge : Lounge, playerId : UUID) : Result<ServerMes
     )
 }
 
+fun handleRequestPlayerListForGame(lounge : Lounge, playerId : UUID, gameName : String) : Result<ServerMessage> {
+    return when(lounge.games.containsKey(key = gameName)) {
+        true -> Success(PlayerListForGameResponse(eventNumber = 0,
+                gameName = gameName,
+                players = lounge.games[gameName]!!.players.values.toList())
+            .addRecipient(recipient = playerId))
+        false -> Failure(reason = "No game with name '$gameName' exists.")
+    }
+}
+
 fun handleRequestGameState(lounge : Lounge, gameName: String, playerId : UUID) : Result<ServerMessage> {
     return Success(
         GameStateResponse(

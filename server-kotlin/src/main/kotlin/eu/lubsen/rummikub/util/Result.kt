@@ -1,5 +1,7 @@
 package eu.lubsen.rummikub.util
 
+import eu.lubsen.rummikub.model.Move
+
 sealed class Result<T> {
     abstract fun isSuccess() : Boolean
     abstract fun isFailure() : Boolean
@@ -12,6 +14,13 @@ sealed class Result<T> {
             Failure((this as Failure).message())
         else
             next
+    }
+
+    fun <R, A> chain(next: (A)->Result<R>, arg : A) : Result<R> {
+        return if (this.isFailure())
+            Failure((this as Failure).message())
+        else
+            next(arg)
     }
 }
 

@@ -103,6 +103,7 @@ class ServerVerticle : AbstractVerticle() {
             ClientMessageType.StopGame -> StopGame(json = json)
             ClientMessageType.RequestGameList -> RequestGameList(json = json)
             ClientMessageType.RequestPlayerList -> RequestPlayerList(json = json)
+            ClientMessageType.RequestPlayerListForGame -> RequestPlayerListForGame(json = json)
             ClientMessageType.RequestGameState -> RequestGameState(json = json)
             ClientMessageType.PlayerMove -> PlayerMove(json = json, lounge = lounge)
         }
@@ -119,6 +120,7 @@ class ServerVerticle : AbstractVerticle() {
                 is LeaveGame -> handleLeaveGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is RequestGameList -> handleRequestGameList(lounge = lounge, playerId = message.playerId)
                 is RequestPlayerList -> handleRequestPlayerList(lounge = lounge, playerId = message.playerId)
+                is RequestPlayerListForGame -> handleRequestPlayerListForGame(lounge = lounge, playerId = message.playerId, gameName = message.gameName)
                 is RequestGameState -> handleRequestGameState(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is StartGame -> handleStartGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
                 is StopGame -> handleStopGame(lounge = lounge, gameName = message.gameName, playerId = message.playerId)
@@ -152,6 +154,7 @@ class ServerVerticle : AbstractVerticle() {
     private fun sendMessage(messages : List<ServerMessage>) {
         messages.forEach { sendMessage(message = it) }
     }
+
     private fun sendMessage(message : ServerMessage) {
         for (recipient in message.recipients) {
             val channel = clientSockets[recipient]
