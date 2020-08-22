@@ -91,8 +91,8 @@
      on:mouseover={(event)=>eventHoverStart(event, tileSet.id)}
      on:mouseout={(event)=>eventHoverEnd(event, tileSet.id)}
      on:mousemove={()=>{showSplitZones = true;}}
-     class:bg-red-100="{!tileSet.isValid}"
-     class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-teal-200 hover:cursor-pointer">
+     class:bg-red-500="{!tileSet.isValid}"
+     class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-gray-600 hover:cursor-pointer">
     {#if showMergeZones}
         <div class="merge-zones-container">
                 <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10"
@@ -114,7 +114,7 @@
     <div class="split-zones-container">
         {#each tileSet.tiles as tile, i}
             {#if i < (tileSet.tiles.length - 1)}
-                <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full hover:bg-gray-400 hover:cursor-ew-resize"
+                <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full opacity-75 hover:bg-gray-400 hover:cursor-ew-resize"
                      class:hidden={!showSplitZones}
                      in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}"
                      on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}>

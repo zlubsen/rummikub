@@ -7,10 +7,17 @@
     export let games;
     export let currentGame;
     export let playerId;
-    let selectedGame = "";
+    export let playersInSelectedGame;
+    let selectedGame = null;
     let createGameName;
     $: isOwner = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).owner == playerId;
     $: currentIsStarted = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).gameState === "STARTED";
+
+    function clickGameList(event) {
+        dispatch('gameDetails', {
+            gameName : selectedGame
+        })
+    }
 
     function clickJoinGame(event) {
         if (selectedGame) {
@@ -52,13 +59,15 @@
     }
 </script>
 
-<div id="gameList" class="border-l-2 border-t-2 bg-gray-100 h-full p-2">
-<!--    <select id="games" size="10" bind:value={selectedGame} class="form-multiselect w-full block">-->
-<!--    {#each [...games] as [id, game]}-->
-<!--        <option value="{game.gameName}">{game.gameName}</option>-->
-<!--    {/each}-->
-<!--    </select>-->
-    <SelectableList items="{[...games.values()]}" bind:selectedItem={selectedGame} />
+<div id="gameList" class="bg-blue-600 h-full p-2">
+    <SelectableList on:select={clickGameList} items="{[...games.values()]}" bind:selectedItem={selectedGame} />
+    {#if (selectedGame && (playersInSelectedGame !== undefined)) }
+        <ul class="border h-24">
+        {#each playersInSelectedGame as player}
+            <li>{player.name}</li>
+        {/each}
+        </ul>
+    {/if}
     {#if currentGame }
         {#if isOwner }
             {#if currentIsStarted }
@@ -80,7 +89,7 @@
 
         <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!playerId}" class="form-input m-1">
         <br/>
-        <button id="createGameButton" on:click={clickCreateGame} disabled="{!playerId}" class="form-input m-1">Create game</button>
+        <button id="createGameButton" on:click={clickCreateGame} disabled="{!playerId||!createGameName}" class="form-input m-1">Create game</button>
     {/if}
 </div>
 

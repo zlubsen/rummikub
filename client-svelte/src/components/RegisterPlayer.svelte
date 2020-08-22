@@ -7,9 +7,6 @@
     export let playerId;
 
     function clickConnect() {
-        if (playerName === undefined)
-            return;
-
         dispatch('connect', {
             playerName: playerName
         });
@@ -26,7 +23,7 @@
 <div id="registerPlayer" class="inline float-right">
     {#if playerId === undefined }
         <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName} class="form-input">
-        <button id="connectButton" on:click={clickConnect} class="form-input">Join lounge</button>
+        <button id="connectButton" disabled="{!playerName}" on:click={clickConnect} class="form-input">Join lounge</button>
     {:else}
         <button id="disconnectButton" on:click={clickDisconnect} class="form-input">Leave lounge</button>
     {/if}

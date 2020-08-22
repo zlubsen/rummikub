@@ -1,14 +1,19 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
 
-export let items;
-export let selectedItem;
+    const dispatch = createEventDispatcher();
+
+    export let items;
+    export let selectedItem;
 
 function selectItem(event, item) {
     event.stopPropagation();
     selectedItem = item;
+    dispatch('select');
 }
+
 function unselect(event) {
-    selectedItem = undefined;
+    selectedItem = null;
 }
 
 </script>

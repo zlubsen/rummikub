@@ -8,42 +8,55 @@
     import GameList from "./components/GameList.svelte";
     import PlayerHand from "./components/PlayerHand.svelte";
     import TurnControls from "./components/TurnControls.svelte";
+    import {log} from "./stores/logMessage.js";
+    import {onDestroy} from "svelte";
+
+    const updateInterval = 120000; // every 2 minutes
+    const serverAddress = "ws://192.168.8.158:8080/join"
 
     let playerId = undefined;
     let playerName = undefined;
     let currentGame = undefined;
-    $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
-    $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === playerId;
-
-    let serverAddress = "ws://192.168.8.158:8080/join"
 
     let connection;
+    let requestGamesInterval;
+    let requestPlayersInterval;
     let logMessage;
 
     let players = new Map();
     let games = new Map();
+    let playersInSelectedGame = [];
+    let playersInCurrentGame = [];
 
     let currentPlayer = undefined;
+    $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
+    $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === playerId;
     let table = new Map();
     let hand = new Map();
 
+    const unsubscribeLogging = log.subscribe(value => {
+        logMessage = value;
+    });
+
+    onDestroy(unsubscribeLogging);
+
     const receiveHandler = function (message) {
         let messageType = message.messageType
-        console.log("received msg: " + message.messageType);
+        // console.log("received msg: " + message.messageType);
         switch (messageType) {
             case "MessageResponse":
                 logMessage = message.message;
                 break;
             case "Connected":
-                console.log(message);
                 playerId = message.player.id
                 playerName = message.player.name
                 connection.sendJson(IDL.msgRequestPlayerList(playerId));
                 connection.sendJson(IDL.msgRequestGameList(playerId));
+                requestGamesInterval = setInterval(() => connection.sendJson(IDL.msgRequestGameList(playerId)), updateInterval);
+                requestPlayersInterval = setInterval(() => connection.sendJson(IDL.msgRequestPlayerList(playerId)), updateInterval);
                 logMessage = "Welcome to Rummikub!";
                 break;
             case "PlayerConnected":
-                console.log(message);
                 players.set(message.player.id, message.player.name);
                 players = players;
                 logMessage = "Player joined: " + message.player.name;
@@ -61,21 +74,26 @@
                 logMessage = "Game " + message.game.gameName + " created by " + players.get(message.game.owner);
                 break;
             case "GameRemoved":
+                if (currentGame === message.gameName) {
+                    clearGame();
+                }
                 games.delete(message.gameName);
                 games = games;
-                if (currentGame === message.gameName) {
-                    currentGame = undefined;
-                }
                 logMessage = "Game " + message.gameName + " removed";
                 break;
             case "PlayerJoinedGame":
-                if (message.playerId === playerId)
+                if (message.playerId === playerId) {
                     currentGame = message.gameName;
+                }
+                playersInCurrentGame.push(message.playerId);
+                playersInCurrentGame = playersInCurrentGame;
                 logMessage = "Player " + players.get(message.playerId) + " joined game " + message.gameName;
                 break;
             case "PlayerLeftGame":
                 if (message.playerId === playerId)
-                    currentGame = undefined;
+                    clearGame();
+                playersInCurrentGame.splice(playersInCurrentGame.indexOf(message.playerId), 1);
+                playersInCurrentGame = playersInCurrentGame
                 logMessage = "Player " + players.get(message.playerId) + " left game " + message.gameName;
                 break;
             case "GameStarted":
@@ -172,8 +190,8 @@
                 break;
             case "GameListResponse":
                 games.clear();
-                message.games.forEach(function (gameName) {
-                    games.set(gameName, gameName);
+                message.games.forEach(function (game) {
+                    games.set(game.gameName, game);
                 });
                 games = games;
                 break;
@@ -183,6 +201,12 @@
                     players.set(player.id, player.name);
                 });
                 players = players;
+                break;
+            case "PlayerListForGameResponse":
+                playersInSelectedGame = []
+                message.players.forEach(function (player) {
+                    playersInSelectedGame.push(player);
+                });
                 break;
             case "GameStateResponse":
                 hand.clear();
@@ -198,6 +222,11 @@
                 table = table;
 
                 currentPlayer = message.currentPlayer;
+                playersInCurrentGame = [];
+                message.players.forEach((player) => {
+                    playersInCurrentGame.push(player.id);
+                });
+                playersInCurrentGame = playersInCurrentGame;
                 if (games.has(message.game.gameName)) {
                     games.delete(message.game.gameName)
                 }
@@ -211,7 +240,8 @@
     }
 
     const closeHandler = function() {
-        console.log("disconnected from server");
+        logMessage = "You were disconnected from the server.";
+        clearState();
         // TODO cleanup client state
     }
 
@@ -227,14 +257,34 @@
     //     event.returnValue = 'If you navigate away, you close the session...';
     // });
 
+    function clearState() {
+        playerId = undefined;
+        playerName = undefined;
+        players.clear();
+        games.clear();
+
+        clearInterval(requestGamesInterval);
+        clearInterval(requestPlayersInterval);
+
+        clearGame();
+    }
+
+    function clearGame() {
+        currentGame = undefined;
+        currentPlayer = undefined;
+        playersInCurrentGame = [];
+
+        table.clear()
+        hand.clear();
+    }
+
     function eventJoin(event) {
         connection = new Connection(serverAddress, event.detail.playerName, receiveHandler, closeHandler);
     }
 
     function eventLeave(event) {
         connection.disconnect();
-        playerName = undefined;
-        playerId = undefined;
+        clearState();
     }
 
     function eventJoinGame(event) {
@@ -295,129 +345,136 @@
         connection.sendJson(IDL.msgRequestPlayerList(playerId));
     }
 
-    // games.set("Aap",
-    //     {
-    //         gameName:"Aap"
-    //     });
-    // games.set("Noot",
-    //     {
-    //         gameName:"Noot"
-    //     });
-    // games.set("Mies",
-    //     {
-    //         gameName:"Mies"
-    //     });
-    //
-    // table.set("xxsdf1",
-    //     {
-    //         id: "xxsdf1",
-    //         tiles : [
-    //             {color : "BLACK", number : "8", isJoker: false},
-    //             {color : "BLACK", number : "9", isJoker: false},
-    //             {color : "BLACK", number : "10", isJoker: false}
-    //         ],
-    //         isValid:true
-    //     });
-    // table.set("ldjfb5",
-    //     {
-    //         id: "ldjfb5",
-    //         tiles : [
-    //             {color : "BLUE", number : "1", isJoker: false},
-    //             {color : "YELLOW", number : "1", isJoker: false},
-    //             {color : "BLACK", number : "1", isJoker: false}
-    //         ],
-    //         isValid:true
-    //     });
-    // table.set("sdlkg4",
-    //     {
-    //         id: "sdlkg4",
-    //         tiles : [
-    //             {color : "BLUE", number : "8", isJoker: false},
-    //             {color : "BLACK", number : "3", isJoker: false},
-    //             {color : "RED", number : "10", isJoker: false},
-    //             {color : "RED", number : "10", isJoker: true}
-    //         ],
-    //         isValid:false
-    //     });
-    // table.set("livnr5",
-    //     {
-    //         id: "livnr5",
-    //         tiles : [
-    //             {color : "BLUE", number : "6", isJoker: false},
-    //             {color : "BLUE", number : "7", isJoker: false},
-    //             {color : "BLUE", number : "8", isJoker: false},
-    //             {color : "BLUE", number : "9", isJoker: false},
-    //             {color : "BLUE", number : "10", isJoker: false},
-    //             {color : "BLUE", number : "11", isJoker: false},
-    //             {color : "BLUE", number : "12", isJoker: false},
-    //             {color : "BLUE", number : "13", isJoker: false},
-    //         ],
-    //         isValid:true
-    //     });
-    //
-    // hand.set("xxsdf1",
-    //     {
-    //         id: "xxsdf1",
-    //         tiles : [
-    //             {color : "BLACK", number : "8", isJoker: false},
-    //             {color : "BLACK", number : "9", isJoker: false},
-    //             {color : "BLACK", number : "10", isJoker: false}
-    //         ],
-    //         isValid:true
-    //     });
-    // hand.set("ldjfb5",
-    //     {
-    //         id: "ldjfb5",
-    //         tiles : [
-    //             {color : "BLUE", number : "1", isJoker: false},
-    //             {color : "YELLOW", number : "1", isJoker: false},
-    //             {color : "BLACK", number : "1", isJoker: false}
-    //         ],
-    //         isValid:true
-    //     });
-    // hand.set("sdlkg4",
-    //     {
-    //         id: "sdlkg4",
-    //         tiles : [
-    //             {color : "BLUE", number : "8", isJoker: false},
-    //             {color : "BLACK", number : "3", isJoker: false},
-    //             {color : "RED", number : "10", isJoker: false},
-    //             {color : "RED", number : "10", isJoker: true}
-    //         ],
-    //         isValid:false
-    //     });
-    // hand.set("livnr5",
-    //     {
-    //         id: "livnr5",
-    //         tiles : [
-    //             {color : "BLUE", number : "6", isJoker: false},
-    //             {color : "BLUE", number : "7", isJoker: false},
-    //             {color : "BLUE", number : "8", isJoker: false},
-    //             {color : "BLUE", number : "9", isJoker: false},
-    //             {color : "BLUE", number : "10", isJoker: false},
-    //             {color : "BLUE", number : "11", isJoker: false},
-    //             {color : "BLUE", number : "12", isJoker: false},
-    //             {color : "BLUE", number : "13", isJoker: false},
-    //         ],
-    //         isValid:true
-    //     });
+    function eventRequestPlayersInGameList(event) {
+        connection.sendJson(IDL.msgRequestPlayerListForGame(playerId, event.detail.gameName));
+    }
+
+    games.set("Aap",
+        {
+            gameName:"Aap"
+        });
+    games.set("Noot",
+        {
+            gameName:"Noot"
+        });
+    games.set("Mies",
+        {
+            gameName:"Mies"
+        });
+
+    table.set("xxsdf1",
+        {
+            id: "xxsdf1",
+            tiles : [
+                {color : "BLACK", number : "8", isJoker: false},
+                {color : "BLACK", number : "9", isJoker: false},
+                {color : "BLACK", number : "10", isJoker: false}
+            ],
+            isValid:true
+        });
+    table.set("ldjfb5",
+        {
+            id: "ldjfb5",
+            tiles : [
+                {color : "BLUE", number : "1", isJoker: false},
+                {color : "YELLOW", number : "1", isJoker: false},
+                {color : "BLACK", number : "1", isJoker: false}
+            ],
+            isValid:true
+        });
+    table.set("sdlkg4",
+        {
+            id: "sdlkg4",
+            tiles : [
+                {color : "BLUE", number : "8", isJoker: false},
+                {color : "BLACK", number : "3", isJoker: false},
+                {color : "RED", number : "10", isJoker: false},
+                {color : "RED", number : "10", isJoker: true}
+            ],
+            isValid:false
+        });
+    table.set("livnr5",
+        {
+            id: "livnr5",
+            tiles : [
+                {color : "BLUE", number : "6", isJoker: false},
+                {color : "BLUE", number : "7", isJoker: false},
+                {color : "BLUE", number : "8", isJoker: false},
+                {color : "BLUE", number : "9", isJoker: false},
+                {color : "BLUE", number : "10", isJoker: false},
+                {color : "BLUE", number : "11", isJoker: false},
+                {color : "BLUE", number : "12", isJoker: false},
+                {color : "BLUE", number : "13", isJoker: false},
+            ],
+            isValid:true
+        });
+
+    hand.set("xxsdf1",
+        {
+            id: "xxsdf1",
+            tiles : [
+                {color : "BLACK", number : "8", isJoker: false},
+                {color : "BLACK", number : "9", isJoker: false},
+                {color : "BLACK", number : "10", isJoker: false}
+            ],
+            isValid:true
+        });
+    hand.set("ldjfb5",
+        {
+            id: "ldjfb5",
+            tiles : [
+                {color : "BLUE", number : "1", isJoker: false},
+                {color : "YELLOW", number : "1", isJoker: false},
+                {color : "BLACK", number : "1", isJoker: false}
+            ],
+            isValid:true
+        });
+    hand.set("sdlkg4",
+        {
+            id: "sdlkg4",
+            tiles : [
+                {color : "BLUE", number : "8", isJoker: false},
+                {color : "BLACK", number : "3", isJoker: false},
+                {color : "RED", number : "10", isJoker: false},
+                {color : "RED", number : "10", isJoker: true}
+            ],
+            isValid:false
+        });
+    hand.set("livnr5",
+        {
+            id: "livnr5",
+            tiles : [
+                {color : "BLUE", number : "6", isJoker: false},
+                {color : "BLUE", number : "7", isJoker: false},
+                {color : "BLUE", number : "8", isJoker: false},
+                {color : "BLUE", number : "9", isJoker: false},
+                {color : "BLUE", number : "10", isJoker: false},
+                {color : "BLUE", number : "11", isJoker: false},
+                {color : "BLUE", number : "12", isJoker: false},
+                {color : "BLUE", number : "13", isJoker: false},
+            ],
+            isValid:true
+        });
 
 </script>
 
-<div id="fullscreen-container" class="flex flex-col full-screen-app w-screen">
-    <header id="header" class="flex-0 h-16 border border-blue-300 rounded mt-1 mx-1 p-3">
-        <span class="font-inter text-2xl text-blue-500">Welcome to Rummikub!</span>
+<div id="fullscreen-container" class="flex flex-col full-screen-app w-screen bg-gray-900">
+    <header id="header" class="flex-0 h-16 bg-blue-600 p-3">
+        <span class="font-inter text-2xl text-white">Welcome to Rummikub!</span>
         {#if playerName}
-            <span class="pl-2 pr-2 font-inter">Player: {playerName}</span>
+            <span class="pl-2 pr-2 font-inter text-white">Player: {playerName}</span>
         {/if}
         {#if currentGame}
-            <span class="pl-2 pr-2 font-inter">Game: {currentGame}</span>
+            <span class="pl-2 pr-2 font-inter text-white">Game: {currentGame}</span>
+            {#each playersInCurrentGame as playerId}
+                <span class:bg-orange-500={playerId===currentPlayer}>{players.get(playerId)}</span>
+            {/each}
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
     <main class="flex-auto min-h-full">
         <div id="game" class="inline-block h-full w-full grid grid-cols-5 m-1">
-        <div class="col-span-4 box-border"
+        <div class="col-span-4 box-border m-1"
             class:active-player={isPlayersTurn}
             class:inactive-player={!isPlayersTurn}>
             <GameBoard table="{table}"
@@ -426,8 +483,9 @@
                 on:moveTiles="{eventMoveTiles}"
             />
         </div>
-        <div class="col-span-1">
-            <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}"
+        <div class="col-span-1 m-1">
+            <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}" playersInSelectedGame="{playersInSelectedGame}"
+                on:gameDetails={eventRequestPlayersInGameList}
                 on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
                 on:createGame={eventCreateGame}
                 on:removeGame={eventRemoveGame}
@@ -435,14 +493,14 @@
                 on:stopGame={eventStopGame}
             />
         </div>
-        <div class="col-span-4">
+        <div class="col-span-4 m-1">
             <PlayerHand hand="{hand}"
                 on:merge={eventMerge}
                 on:split={eventSplit}
                 on:moveTiles={eventMoveTiles}
             />
         </div>
-        <div class="col-span-1">
+        <div class="col-span-1 m-1">
             <TurnControls {gameState} {isPlayersTurn}
                 on:endTurn={eventEndTurn}
                 on:takeFromHeap={eventTakeFromHeap}
@@ -450,8 +508,8 @@
         </div>
         </div>
     </main>
-    <footer id="footer" class="flex-0 h-10 border border-blue-300 rounded m-1 p-2">
-        <span class="font-inter">
+    <footer id="footer" class="flex-0 h-10 bg-blue-600 p-2">
+        <span class="font-inter text-white">
             {#if logMessage}
                 {logMessage}
             {:else}
@@ -488,7 +546,7 @@
     /*    grid-area: footer;*/
     /*}*/
     .active-player {
-        @apply border-2 border-blue-300 rounded-md;
+        @apply border-2 border-orange-500 rounded-md;
     }
     .inactive-player {
         padding: 2px;
@@ -496,43 +554,25 @@
 </style>
 
 <!-- TODO show/hide buttons and such based on gamestate -->
-<!-- V UX: move tiles from same location: do not send message to server; make it impossible-->
 <!-- - can we merge with not owned tilesets during initial play?-->
-<!-- - UX: directly move tileset location and merge with other tileset (e.g., directly append a tile to a set on the table)-->
-<!-- - tried to merge a set with a J, lost the set on the table (‘TileSet not found in TABLE.’), and also in the hand…-->
-
-<!-- - tileset op board wordt zonder actie gesplit… (clicked take from heap)-->
 
 <!--UX:-->
-<!-- - move (hand to table) + merge in one action-->
-<!-- - press ‘end turn’ without playing: message reports ‘table contains invalid melds’-->
+<!-- - directly move tileset location and merge with other tileset (e.g., directly append a tile to a set on the table)-->
+<!-- - hide merge zones in different location (or add move to directly move and merge)-->
 <!-- - prevent page from navigating away-->
 <!-- - handle when a player disconnects/leaves an ongoing game (show message, cancel the game...)-->
 
-<!-- - initial turn: cannot merge tile with existing set on table > message: ‘not your turn’ ofzo-->
-<!-- - initial turn: cannot move a tile placed on table back in hand. > message: ‘TileSet is not on table’-->
-<!-- - end turn after last message: automatically merges the tile with another set…(last in the list)-->
 <!-- - cannot take back a played joker in the same turn; because a joker is not counted as part of the played tiles list...-->
 
-<!-- - encountered: table was valid, but end turn reported ‘table contains invalid melds’… an invalid meld was previously on the table, but put back in hand.-->
-
 <!-- - send gamestate containing ‘boardIsValid’ and ‘hasPlayedInTurn’ values, to enable/disable the End Turn button.-->
-
 <!-- - after player 1 wins, and removes the game, other players in the game get back in the lounge, but still see the previous game (should get an update of the gameslist / remove the finished game). Message ‘Game xxx removed’ is displayed.-->
 
-<!-- - ongoing game shows up twice in the gamelist-->
+<!-- - ongoing game shows up twice in the gamelist >> possible due to GameStateResponse -->
 
 <!-- - during initial play: create separate messages for when table is valid/invalid and when player did/did not meet initial play value-->
-<!-- - isValid background color does not stand out well in the hand area-->
-<!-- - hide merge zones in different location (or add move to directly move and merge)-->
 <!-- - add move: reset/undo all mutations in this turn (or even more eleborate: add undo button for single action)-->
 <!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
-<!-- - when a game is removed by the owner, the table and hand of other players should be cleared (always clear table and hand when changing the value of ‘currentGame’)-->
 
-<!-- - clear ‘new game name’ fields after creating a new game-->
 <!-- - sanitise formatting of tile names in message: ‘Not all tiles were in player's hand. Played: (…)’-->
-<!-- - player without initial play can split/merge tiles on the table-->
 
-<!-- - Label for player name is not cleared correctly after clicking 'Leave lounge' button-->
 <!-- - grid layout of game area does not display correctly in safari/ipad-->
-<!-- - board area stretches with only one row of tiles. It looks correct when there are multiple rows.-->

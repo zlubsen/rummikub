@@ -54,6 +54,14 @@ function msgRequestPlayerList(playerId) {
     }
 }
 
+function msgRequestPlayerListForGame(playerId, gameId) {
+    return {
+        messageType : "RequestPlayerListForGame",
+        playerId : playerId,
+        gameId : gameId
+    }
+}
+
 function msgRequestGameList(playerId) {
     return {
         messageType : "RequestGameList",
@@ -143,6 +151,7 @@ export {
     msgStopGame,
     msgRequestGameList,
     msgRequestPlayerList,
+    msgRequestPlayerListForGame,
     msgRequestGameState,
     msgMerge,
     msgSplit,
