@@ -131,6 +131,15 @@ function msgEndTurn(playerId, gameId) {
     }
 }
 
+function msgResetTurn(playerId, gameId) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "RESET_TURN",
+        playerId : playerId,
+        gameId : gameId
+    }
+}
+
 function msgTakeFromHeap(playerId, gameId) {
     return {
         messageType : "PlayerMove",
@@ -158,5 +167,6 @@ export {
     msgHandToTable,
     msgTableToHand,
     msgEndTurn,
+    msgResetTurn,
     msgTakeFromHeap
 };

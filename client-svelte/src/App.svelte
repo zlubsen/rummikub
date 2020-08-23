@@ -34,6 +34,9 @@
     let table = new Map();
     let hand = new Map();
 
+    const testData = false;
+    if(testData) setTestData();
+
     const unsubscribeLogging = log.subscribe(value => {
         logMessage = value;
     });
@@ -333,6 +336,10 @@
         connection.sendJson(IDL.msgEndTurn(playerId, currentGame));
     }
 
+    function eventResetTurn(event) {
+        connection.sendJson(IDL.msgResetTurn(playerId, currentGame));
+    }
+
     function eventTakeFromHeap(event) {
         connection.sendJson(IDL.msgTakeFromHeap(playerId, currentGame));
     }
@@ -349,117 +356,119 @@
         connection.sendJson(IDL.msgRequestPlayerListForGame(playerId, event.detail.gameName));
     }
 
-    games.set("Aap",
-        {
-            gameName:"Aap"
-        });
-    games.set("Noot",
-        {
-            gameName:"Noot"
-        });
-    games.set("Mies",
-        {
-            gameName:"Mies"
-        });
+    function setTestData() {
+        games.set("Aap",
+            {
+                gameName: "Aap"
+            });
+        games.set("Noot",
+            {
+                gameName: "Noot"
+            });
+        games.set("Mies",
+            {
+                gameName: "Mies"
+            });
 
-    table.set("xxsdf1",
-        {
-            id: "xxsdf1",
-            tiles : [
-                {color : "BLACK", number : "8", isJoker: false},
-                {color : "BLACK", number : "9", isJoker: false},
-                {color : "BLACK", number : "10", isJoker: false}
-            ],
-            isValid:true
-        });
-    table.set("ldjfb5",
-        {
-            id: "ldjfb5",
-            tiles : [
-                {color : "BLUE", number : "1", isJoker: false},
-                {color : "YELLOW", number : "1", isJoker: false},
-                {color : "BLACK", number : "1", isJoker: false}
-            ],
-            isValid:true
-        });
-    table.set("sdlkg4",
-        {
-            id: "sdlkg4",
-            tiles : [
-                {color : "BLUE", number : "8", isJoker: false},
-                {color : "BLACK", number : "3", isJoker: false},
-                {color : "RED", number : "10", isJoker: false},
-                {color : "RED", number : "10", isJoker: true}
-            ],
-            isValid:false
-        });
-    table.set("livnr5",
-        {
-            id: "livnr5",
-            tiles : [
-                {color : "BLUE", number : "6", isJoker: false},
-                {color : "BLUE", number : "7", isJoker: false},
-                {color : "BLUE", number : "8", isJoker: false},
-                {color : "BLUE", number : "9", isJoker: false},
-                {color : "BLUE", number : "10", isJoker: false},
-                {color : "BLUE", number : "11", isJoker: false},
-                {color : "BLUE", number : "12", isJoker: false},
-                {color : "BLUE", number : "13", isJoker: false},
-            ],
-            isValid:true
-        });
+        table.set("xxsdf1",
+            {
+                id: "xxsdf1",
+                tiles: [
+                    {color: "BLACK", number: "8", isJoker: false},
+                    {color: "BLACK", number: "9", isJoker: false},
+                    {color: "BLACK", number: "10", isJoker: false}
+                ],
+                isValid: true
+            });
+        table.set("ldjfb5",
+            {
+                id: "ldjfb5",
+                tiles: [
+                    {color: "BLUE", number: "1", isJoker: false},
+                    {color: "YELLOW", number: "1", isJoker: false},
+                    {color: "BLACK", number: "1", isJoker: false}
+                ],
+                isValid: true
+            });
+        table.set("sdlkg4",
+            {
+                id: "sdlkg4",
+                tiles: [
+                    {color: "BLUE", number: "8", isJoker: false},
+                    {color: "BLACK", number: "3", isJoker: false},
+                    {color: "RED", number: "10", isJoker: false},
+                    {color: "RED", number: "10", isJoker: true}
+                ],
+                isValid: false
+            });
+        table.set("livnr5",
+            {
+                id: "livnr5",
+                tiles: [
+                    {color: "BLUE", number: "6", isJoker: false},
+                    {color: "BLUE", number: "7", isJoker: false},
+                    {color: "BLUE", number: "8", isJoker: false},
+                    {color: "BLUE", number: "9", isJoker: false},
+                    {color: "BLUE", number: "10", isJoker: false},
+                    {color: "BLUE", number: "11", isJoker: false},
+                    {color: "BLUE", number: "12", isJoker: false},
+                    {color: "BLUE", number: "13", isJoker: false},
+                ],
+                isValid: true
+            });
 
-    hand.set("xxsdf1",
-        {
-            id: "xxsdf1",
-            tiles : [
-                {color : "BLACK", number : "8", isJoker: false},
-                {color : "BLACK", number : "9", isJoker: false},
-                {color : "BLACK", number : "10", isJoker: false}
-            ],
-            isValid:true
-        });
-    hand.set("ldjfb5",
-        {
-            id: "ldjfb5",
-            tiles : [
-                {color : "BLUE", number : "1", isJoker: false},
-                {color : "YELLOW", number : "1", isJoker: false},
-                {color : "BLACK", number : "1", isJoker: false}
-            ],
-            isValid:true
-        });
-    hand.set("sdlkg4",
-        {
-            id: "sdlkg4",
-            tiles : [
-                {color : "BLUE", number : "8", isJoker: false},
-                {color : "BLACK", number : "3", isJoker: false},
-                {color : "RED", number : "10", isJoker: false},
-                {color : "RED", number : "10", isJoker: true}
-            ],
-            isValid:false
-        });
-    hand.set("livnr5",
-        {
-            id: "livnr5",
-            tiles : [
-                {color : "BLUE", number : "6", isJoker: false},
-                {color : "BLUE", number : "7", isJoker: false},
-                {color : "BLUE", number : "8", isJoker: false},
-                {color : "BLUE", number : "9", isJoker: false},
-                {color : "BLUE", number : "10", isJoker: false},
-                {color : "BLUE", number : "11", isJoker: false},
-                {color : "BLUE", number : "12", isJoker: false},
-                {color : "BLUE", number : "13", isJoker: false},
-            ],
-            isValid:true
-        });
+        hand.set("xxsdf1",
+            {
+                id: "xxsdf1",
+                tiles: [
+                    {color: "BLACK", number: "8", isJoker: false},
+                    {color: "BLACK", number: "9", isJoker: false},
+                    {color: "BLACK", number: "10", isJoker: false}
+                ],
+                isValid: true
+            });
+        hand.set("ldjfb5",
+            {
+                id: "ldjfb5",
+                tiles: [
+                    {color: "BLUE", number: "1", isJoker: false},
+                    {color: "YELLOW", number: "1", isJoker: false},
+                    {color: "BLACK", number: "1", isJoker: false}
+                ],
+                isValid: true
+            });
+        hand.set("sdlkg4",
+            {
+                id: "sdlkg4",
+                tiles: [
+                    {color: "BLUE", number: "8", isJoker: false},
+                    {color: "BLACK", number: "3", isJoker: false},
+                    {color: "RED", number: "10", isJoker: false},
+                    {color: "RED", number: "10", isJoker: true}
+                ],
+                isValid: false
+            });
+        hand.set("livnr5",
+            {
+                id: "livnr5",
+                tiles: [
+                    {color: "BLUE", number: "6", isJoker: false},
+                    {color: "BLUE", number: "7", isJoker: false},
+                    {color: "BLUE", number: "8", isJoker: false},
+                    {color: "BLUE", number: "9", isJoker: false},
+                    {color: "BLUE", number: "10", isJoker: false},
+                    {color: "BLUE", number: "11", isJoker: false},
+                    {color: "BLUE", number: "12", isJoker: false},
+                    {color: "BLUE", number: "13", isJoker: false},
+                ],
+                isValid: true
+            });
+    }
 
 </script>
 
-<div id="fullscreen-container" class="flex flex-col full-screen-app w-screen bg-gray-900">
-    <header id="header" class="flex-0 h-16 bg-blue-600 p-3">
+<div id="fullscreen-container" class="full-screen-app app-layout w-screen bg-gray-900">
+    <header id="header" class="header-area h-16 bg-blue-600 p-3">
         <span class="font-inter text-2xl text-white">Welcome to Rummikub!</span>
         {#if playerName}
             <span class="pl-2 pr-2 font-inter text-white">Player: {playerName}</span>
@@ -472,43 +481,38 @@
         {/if}
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
-    <main class="flex-auto min-h-full">
-        <div id="game" class="inline-block h-full w-full grid grid-cols-5 m-1">
-        <div class="col-span-4 box-border m-1"
-            class:active-player={isPlayersTurn}
-            class:inactive-player={!isPlayersTurn}>
-            <GameBoard table="{table}"
-                on:merge={eventMerge}
-                on:split={eventSplit}
-                on:moveTiles="{eventMoveTiles}"
-            />
-        </div>
-        <div class="col-span-1 m-1">
-            <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}" playersInSelectedGame="{playersInSelectedGame}"
-                on:gameDetails={eventRequestPlayersInGameList}
-                on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
-                on:createGame={eventCreateGame}
-                on:removeGame={eventRemoveGame}
-                on:startGame={eventStartGame}
-                on:stopGame={eventStopGame}
-            />
-        </div>
-        <div class="col-span-4 m-1">
-            <PlayerHand hand="{hand}"
-                on:merge={eventMerge}
-                on:split={eventSplit}
-                on:moveTiles={eventMoveTiles}
-            />
-        </div>
-        <div class="col-span-1 m-1">
-            <TurnControls {gameState} {isPlayersTurn}
-                on:endTurn={eventEndTurn}
-                on:takeFromHeap={eventTakeFromHeap}
-            />
-        </div>
-        </div>
-    </main>
-    <footer id="footer" class="flex-0 h-10 bg-blue-600 p-2">
+    <div class="board-area m-1">
+        <GameBoard table="{table}" isPlayersTurn="{isPlayersTurn}"
+            on:merge={eventMerge}
+            on:split={eventSplit}
+            on:moveTiles="{eventMoveTiles}"
+        />
+    </div>
+    <div class="game-area m-1">
+        <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}" playersInSelectedGame="{playersInSelectedGame}"
+            on:gameDetails={eventRequestPlayersInGameList}
+            on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
+            on:createGame={eventCreateGame}
+            on:removeGame={eventRemoveGame}
+            on:startGame={eventStartGame}
+            on:stopGame={eventStopGame}
+        />
+    </div>
+    <div class="hand-area h-48 m-1">
+        <PlayerHand hand="{hand}"
+            on:merge={eventMerge}
+            on:split={eventSplit}
+            on:moveTiles={eventMoveTiles}
+        />
+    </div>
+    <div class="control-area m-1">
+        <TurnControls {gameState} {isPlayersTurn}
+            on:endTurn={eventEndTurn}
+            on:resetTurn={eventResetTurn}
+            on:takeFromHeap={eventTakeFromHeap}
+        />
+    </div>
+    <footer id="footer" class="footer-area h-10 bg-blue-600 p-2">
         <span class="font-inter text-white">
             {#if logMessage}
                 {logMessage}
@@ -518,38 +522,38 @@
         </span>
     </footer>
 </div>
-<!--    <div id="admin_section" class="my-2 mx-2 p-2">-->
-<!--        <button on:click={clickRequestGames}>Request Games</button>-->
-<!--        <button on:click={clickRequestPlayers}>Request Players</button>-->
-<!--    </div>-->
-<!--</main>-->
 
 <style>
     .full-screen-app {
-        @apply min-h-screen w-screen;
+        @apply h-screen w-screen;
         min-height: -webkit-fill-available;
     }
-    #game {
-        grid-template-rows: 55vh auto;
+    .app-layout {
+        @apply grid;
+        grid-template-areas:    'header header'
+                                'board game'
+                                'hand control'
+                                'footer footer';
+        grid-template-columns: 5fr minmax(auto, 15em);
+        grid-template-rows: auto 1fr auto;
     }
-    /*#game {*/
-    /*    grid-template-areas:    'header header'*/
-    /*                            'board game'*/
-    /*                            'hand control'*/
-    /*                            'footer footer';*/
-    /*    grid-template-rows: 55vh auto;*/
-    /*}*/
-    /*header {*/
-    /*    grid-area: header;*/
-    /*}*/
-    /*footer {*/
-    /*    grid-area: footer;*/
-    /*}*/
-    .active-player {
-        @apply border-2 border-orange-500 rounded-md;
+    .header-area {
+        grid-area: header;
     }
-    .inactive-player {
-        padding: 2px;
+    .footer-area {
+        grid-area: footer;
+    }
+    .board-area {
+        grid-area: board;
+    }
+    .hand-area {
+        grid-area: hand;
+    }
+    .game-area {
+        grid-area: game;
+    }
+    .control-area {
+        grid-area: control;
     }
 </style>
 
@@ -572,7 +576,3 @@
 <!-- - during initial play: create separate messages for when table is valid/invalid and when player did/did not meet initial play value-->
 <!-- - add move: reset/undo all mutations in this turn (or even more eleborate: add undo button for single action)-->
 <!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
-
-<!-- - sanitise formatting of tile names in message: ‘Not all tiles were in player's hand. Played: (…)’-->
-
-<!-- - grid layout of game area does not display correctly in safari/ipad-->

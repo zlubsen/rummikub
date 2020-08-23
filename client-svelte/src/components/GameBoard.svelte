@@ -6,6 +6,7 @@
     const dispatch = createEventDispatcher();
 
     export let table;
+    export let isPlayersTurn;
 
     function eventMoveTilesToTable(event) {
         if (event.dataTransfer.getData(TILESET_SOURCE_LOCATION_TYPE)!==LOCATION_TABLE) {
@@ -22,7 +23,9 @@
 <div id="gameBoard"
         on:drop={eventMoveTilesToTable}
         on:dragover={eventDragOver}
-        class="flex flex-row flex-wrap items-start content-start h-full">
+        class="flex flex-row flex-wrap items-start content-start h-full"
+        class:active-player={isPlayersTurn}
+        class:inactive-player={!isPlayersTurn}>
     {#if table.size === 0 }
         <span class="text-xl text-gray-400">No tiles are on the table.</span>
     {/if}
@@ -32,4 +35,10 @@
 </div>
 
 <style>
+    .active-player {
+        @apply border-2 border-orange-500 rounded-md;
+    }
+    .inactive-player {
+        padding: 2px;
+    }
 </style>

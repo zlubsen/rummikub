@@ -7,13 +7,15 @@
     export let isPlayersTurn;
 
     function clickEndTurn(event) {
-        dispatch('endTurn', {
-        });
+        dispatch('endTurn', {});
+    }
+
+    function clickResetTurn(event) {
+        dispatch('resetTurn',{});
     }
 
     function clickTakeFromHeap(event) {
-        dispatch('takeFromHeap', {
-        });
+        dispatch('takeFromHeap', {});
     }
 </script>
 
@@ -21,6 +23,7 @@
 Controls<br/>
     {#if gameState === "STARTED" }
         <button id="endTurnButton" disabled="{!isPlayersTurn}" on:click={clickEndTurn} class="form-input">End Turn</button><br/>
+        <button id="resetButton" disabled="{!isPlayersTurn}" on:click={clickResetTurn} class="form-input">Reset</button><br/>
         <button id="takeFromHeapButton" disabled="{!isPlayersTurn}" on:click={clickTakeFromHeap} class="form-input">Take from Heap</button><br/>
     {/if}
 </div>

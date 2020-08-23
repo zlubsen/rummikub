@@ -20,7 +20,7 @@
 
 </script>
 
-<div id="playerHand" class="flex flex-row flex-wrap content-start h-full p-2 border-2 border-orange-500"
+<div id="playerHand" class="flex flex-row flex-wrap items-start content-start h-full p-2 border-2 border-orange-500"
     on:drop={eventMoveTilesToHand}
      on:dragover={eventDragOver}>
     {#if hand.size === 0 }

@@ -87,7 +87,7 @@
         <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="form-input m-1">Join Game</button>
         <br/>
 
-        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!playerId}" class="form-input m-1">
+        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!playerId}" class="form-input w-full m-1">
         <br/>
         <button id="createGameButton" on:click={clickCreateGame} disabled="{!playerId||!createGameName}" class="form-input m-1">Create game</button>
     {/if}
