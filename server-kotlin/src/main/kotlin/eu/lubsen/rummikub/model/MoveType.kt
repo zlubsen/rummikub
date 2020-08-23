@@ -7,5 +7,6 @@ enum class MoveType {
     SPLIT,
 //    TAKE_JOKER,
     TAKE_FROM_HEAP,
-    END_TURN
+    END_TURN,
+    RESET_TURN
 }

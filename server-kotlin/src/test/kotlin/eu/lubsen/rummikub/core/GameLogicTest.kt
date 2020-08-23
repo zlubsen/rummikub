@@ -195,10 +195,24 @@ internal class GameLogicTest {
     }
 
     @Test
+    fun isInvalidRunWithJokerAtStart() {
+        val input = "J-Bla1-Bla2"
+        val tileSet = parseTileSet(input)
+        assertFalse(isValidRun(tileSet))
+    }
+
+    @Test
     fun isValidRunWithJokerAtEnd() {
-        val input = "J-Bla2-Bla3-Bla4"
+        val input = "Bla3-Bla4-J"
         val tileSet = parseTileSet(input)
         assertTrue(isValidRun(tileSet))
+    }
+
+    @Test
+    fun isInvalidRunWithJokerAtEnd() {
+        val input = "Bla12-Bla13-J"
+        val tileSet = parseTileSet(input)
+        assertFalse(isValidRun(tileSet))
     }
 
     @Test

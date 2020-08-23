@@ -64,7 +64,7 @@ fun tryMove(move: Move) : Result<MoveResult> {
     assert(GameState.STARTED == move.game.gameState)
     val allowedToPlay = playerCanPlay(move = move)
     val allowedToArrange = playerCanArrange(move = move)
-    val playedInitial = playerHasInitialPlay(player = move.player)
+    val playedInitial = playerHasInitialPlay(player = move.player) || isHeapEmpty(game = move.game)
 
     return if (playedInitial) {
         when (move.moveType) {
@@ -73,12 +73,14 @@ fun tryMove(move: Move) : Result<MoveResult> {
             MoveType.SPLIT -> allowedToArrange.chain(next = ::splitTileSet, arg = move)
             MoveType.MERGE -> allowedToArrange.chain(next = ::mergeTileSets, arg = move)
             MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = ::playerDrawsFromHeap, arg = move)
+            MoveType.RESET_TURN -> allowedToPlay.chain(next = ::playerResetsTurn, arg = move)
             MoveType.END_TURN -> allowedToPlay.chain(next = ::playerEndsTurn, arg = move)
         }
     } else
         tryInitialPlayMove(move = move)
 }
 
+// TODO - Rule: player can swap a joker for a matching tile from it's rack during initial play.
 fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
     val allowedToPlay = playerCanPlay(move = move)
     val arrangeHand = playerCanArrangeHand(move = move)
@@ -89,6 +91,7 @@ fun tryInitialPlayMove(move: Move) : Result<MoveResult> {
         MoveType.SPLIT -> arrangeHand.chain(next = ::splitTileSet, arg = move)
         MoveType.MERGE -> arrangeHand.chain(next = ::mergeTileSets, arg = move)
         MoveType.TAKE_FROM_HEAP -> allowedToPlay.chain(next = ::playerDrawsFromHeap, arg = move)
+        MoveType.RESET_TURN -> allowedToPlay.chain(next = ::playerResetsTurn, arg = move)
         MoveType.END_TURN -> allowedToPlay.chain(next = ::playerEndsInitialTurn, arg = move)
     }
 }
@@ -104,18 +107,22 @@ fun playerDrawsFromHeap(move: Move) : Result<MoveResult> =
 fun playerEndsTurn(move: Move) : Result<MoveResult> =
     playerEndsTurn(game = move.game, player = move.player)
 
+fun playerResetsTurn(move: Move) : Result<MoveResult> =
+    playerResetsTurn(game = move.game, player = move.player)
+
 fun playerEndsInitialTurn(move: Move) : Result<MoveResult> =
     playerEndsInitialTurn(game = move.game)
 
 fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMessage>> {
     return when(result) {
-        is Success -> when(result.result()) {
+        is Success -> when (result.result()) {
             is TilesMerged -> {
                 val moveResult = result.result() as TilesMerged
-                val message : ServerMessage = PlayedTileSetsMerged(
+                val message: ServerMessage = PlayedTileSetsMerged(
                     eventNumber = 0,
-                    move = moveResult)
-                when(moveResult.location) {
+                    move = moveResult
+                )
+                when (moveResult.location) {
                     MoveLocation.HAND -> message.addRecipient(moveResult.playerId)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
@@ -124,10 +131,11 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
             }
             is TilesSplit -> {
                 val moveResult = result.result() as TilesSplit
-                val message : ServerMessage = PlayedTileSetSplit(
+                val message: ServerMessage = PlayedTileSetSplit(
                     eventNumber = 0,
-                    move = moveResult)
-                when(moveResult.location) {
+                    move = moveResult
+                )
+                when (moveResult.location) {
                     MoveLocation.HAND -> message.addRecipient(moveResult.playerId)
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
@@ -136,62 +144,98 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
             }
             is TurnEnded -> {
                 val items = mutableListOf<ServerMessage>()
-                items.add(PlayedTurnEnded(
-                    eventNumber = 0,
-                    move = result.result() as TurnEnded
-                ).addRecipient(recipients = game.players.keys))
+                items.add(
+                    PlayedTurnEnded(
+                        eventNumber = 0,
+                        move = result.result() as TurnEnded
+                    ).addRecipient(recipients = game.players.keys)
+                )
                 items.addAll(game.players.values
                     .map {
                         GameStateResponse(eventNumber = 0, game = game, player = it)
-                            .addRecipient(recipient = it.id) })
+                            .addRecipient(recipient = it.id)
+                    })
                 Success(items.toList())
             }
             is PlayerWins -> {
-                Success(listOf(
-                    GameFinished(eventNumber = 0, game = game).addRecipient(recipients = game.players.keys))
+                Success(
+                    listOf(
+                        GameFinished(eventNumber = 0, game = game).addRecipient(recipients = game.players.keys)
+                    )
                 )
             }
             is MoveOk -> {
-                val messages : List<ServerMessage> = when ((result.result() as MoveOk).type) {
+                val messages: List<ServerMessage> = when ((result.result() as MoveOk).type) {
                     MoveType.TAKE_FROM_HEAP -> {
                         val moveOk = result.result() as MoveOk
                         val items = mutableListOf<ServerMessage>()
-                        items.add(PlayedTookFromHeap(eventNumber = 0, move = moveOk)
-                            .addRecipient(recipient = moveOk.playerId))
-                        items.add(PlayedTurnEnded(eventNumber = 0, move = TurnEnded(
-                            type = MoveType.END_TURN,
-                            playerId = moveOk.playerId,
-                            nextPlayerId = game.getCurrentPlayer().id))
-                            .addRecipient(recipients = game.players.keys))
-                        items.add(PlayerTookFromHeap(eventNumber = 0, move = moveOk).addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId }))
+                        items.add(
+                            PlayedTookFromHeap(eventNumber = 0, move = moveOk)
+                                .addRecipient(recipient = moveOk.playerId)
+                        )
+                        items.add(
+                            PlayedTurnEnded(
+                                eventNumber = 0, move = TurnEnded(
+                                    type = MoveType.END_TURN,
+                                    playerId = moveOk.playerId,
+                                    nextPlayerId = game.getCurrentPlayer().id
+                                )
+                            )
+                                .addRecipient(recipients = game.players.keys)
+                        )
+                        items.add(
+                            PlayerTookFromHeap(
+                                eventNumber = 0,
+                                move = moveOk
+                            ).addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId })
+                        )
                         items.addAll(game.players.values
                             .map {
                                 GameStateResponse(eventNumber = 0, game = game, player = it)
-                                    .addRecipient(recipient = it.id) })
+                                    .addRecipient(recipient = it.id)
+                            })
                         items
                     }
                     MoveType.TABLE_TO_HAND -> {
                         val moveOk = result.result() as MoveOk
-                        listOf(PlayedTilesTableToHand(eventNumber = 0, move = moveOk)
-                            .addRecipient(recipient = moveOk.playerId),
+                        listOf(
+                            PlayedTilesTableToHand(eventNumber = 0, move = moveOk)
+                                .addRecipient(recipient = moveOk.playerId),
                             TableChangedTableToHand(eventNumber = 0, move = moveOk)
                                 .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
                         )
                     }
                     MoveType.HAND_TO_TABLE -> {
                         val moveOk = result.result() as MoveOk
-                        listOf(PlayedTilesHandToTable(eventNumber = 0, move = moveOk)
-                            .addRecipient(moveOk.playerId),
+                        listOf(
+                            PlayedTilesHandToTable(eventNumber = 0, move = moveOk)
+                                .addRecipient(moveOk.playerId),
                             TableChangedHandToTable(eventNumber = 0, move = moveOk)
                                 .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
                         )
                     }
                     else -> {
-                        listOf(MessageResponse(eventNumber = 0, message = "This response should not be possible...")
-                            .addRecipient(game.players.keys))
+                        listOf(
+                            MessageResponse(eventNumber = 0, message = "This response should not be possible...")
+                                .addRecipient(game.players.keys)
+                        )
                     }
                 }
                 Success(messages)
+            }
+            is TurnReset -> {
+                val items = mutableListOf<ServerMessage>()
+                val message:ServerMessage = MessageResponse(
+                    eventNumber = 0,
+                    message = "The layout was reset to the start of the turn.")
+                    .addRecipient(recipient = game.getCurrentPlayer().id)
+                items.add(message)
+                items.addAll(game.players.values
+                    .map {
+                        GameStateResponse(eventNumber = 0, game = game, player = it)
+                            .addRecipient(recipient = it.id)
+                    })
+                Success(items.toList())
             }
         }
         is Failure -> Failure(reason = result.message())
@@ -205,7 +249,7 @@ fun gameHasValidNoOfPlayers(game: Game) : Boolean {
 fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
     endAndResetTurn(game = game)
 
-    return if (game.heap.isNotEmpty()) {
+    return if (!isHeapEmpty(game = game)) {
         val tile: Tile = game.heap.random()
         game.heap.remove(element = tile)
         val tileSet = player.tileToHand(tile = tile)
@@ -226,6 +270,10 @@ fun playerDrawsFromHeap(game: Game, player: Player) : Result<MoveResult> {
             )
         )
     }
+}
+
+fun isHeapEmpty(game: Game) : Boolean {
+    return game.heap.isEmpty()
 }
 
 fun playerPutsTilesOnTable(game: Game, player: Player, tileSetId : UUID) : Result<MoveResult> {
@@ -252,10 +300,13 @@ fun playerPutsTilesInHand(game: Game, player: Player, tileSetId: UUID) : Result<
     val tileSet = game.table[tileSetId]!!
     val playedIntersect = tileSet.tiles.filter { tileIsRegular(it) }.intersect(game.turn.tilesIntroduced)
     return if (playedIntersect.size != tileSet.tiles.size)
-        Failure(reason = "Not all tiles were in player's hand. ${game.turn.tilesIntroduced.joinToString(
-            separator = ", ",
-            prefix = "Played: (",
-            postfix = ")")}") // tileSet contains tiles not played in this turn
+        Failure(reason = "Not all tiles were in player's hand. ${
+            game.turn.tilesIntroduced.joinToString(
+                separator = ", ",
+                prefix = "Played: (",
+                postfix = ")"
+            ) { prettyPrintTile(it) }
+        }") // tileSet contains tiles not played in this turn
     else {
         game.table.remove(tileSet.id)
         player.hand[tileSetId] = tileSet
@@ -395,6 +446,18 @@ fun playerEndsInitialTurn(game: Game) : Result<MoveResult> {
         Failure(reason = "Player does not meet initial play value, or the table contains invalid sets.")
 }
 
+fun playerResetsTurn(game: Game, player: Player) : Result<MoveResult> {
+    return when (player == game.getCurrentPlayer()) {
+        true -> {
+            resetTurn(game = game)
+            Success(TurnReset(MoveType.RESET_TURN))
+        }
+        false -> {
+            Failure(reason = "${player.playerName} is not the current player.")
+        }
+    }
+}
+
 fun endAndResetTurn(game: Game) {
     // reset the turn
     resetTurn(game = game)
@@ -497,6 +560,8 @@ fun isValidRun(tileSet: TileSet) : Boolean {
             && allSameTileColor(tiles = tileSet.tiles)
             && allUniqueTileNumber(tiles = tileSet.tiles)
             && allSequentialTileNumber(tiles = tileSet.tiles)
+            && noJokerBeforeOne(tiles = tileSet.tiles)
+            && noJokerAfterThirteen(tiles = tileSet.tiles)
 }
 
 fun hasEnoughTiles(tiles: List<Tile>) : Boolean {
@@ -564,6 +629,16 @@ fun allSequentialTileNumberRec(tiles: List<Tile>, expected : Int) : Boolean {
     }
 }
 
+fun noJokerBeforeOne(tiles: List<Tile>) : Boolean {
+    return tiles.size > 2 &&
+            !(tiles.first().type == TileType.JOKER && tiles[1].number == TileNumber.ONE)
+}
+
+fun noJokerAfterThirteen(tiles: List<Tile>) : Boolean {
+    return tiles.size > 2 &&
+            !(tiles.last().type == TileType.JOKER && tiles[tiles.lastIndex-1].number == TileNumber.THIRTEEN)
+}
+
 fun tileIsJoker(tile: Tile) : Boolean {
     return tile.type == TileType.JOKER
 }
@@ -606,6 +681,6 @@ fun determineJokerValue(tileSet: TileSet, jokerIndex : Int) : Int {
             val offset = jokerIndex - referenceIndex
             tileSet.tiles[referenceIndex].number.ordinal + offset
         }
-        else -> 0
+        else -> 30 // default penalty value
     }
 }

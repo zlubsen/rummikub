@@ -53,6 +53,7 @@ fun parseMove(lounge: Lounge, message : PlayerMove, json: JsonObject) : Move {
         }
         MoveType.TAKE_FROM_HEAP -> {}
         MoveType.END_TURN -> {}
+        MoveType.RESET_TURN -> {}
     }
     return move
 }

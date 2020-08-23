@@ -54,11 +54,14 @@ class Game constructor(val name: String, val owner : Player) {
 
     fun createTiles() : List<Tile> {
         val tiles = mutableListOf<Tile>()
+        // two of each color/number combo
         TileColor.values().filter { color -> color != TileColor.ANY }.forEach { color ->
             TileNumber.values().filter { number -> number != TileNumber.ANY }.forEach { number ->
                 tiles.add(Tile(number, color, TileType.REGULAR))
+                tiles.add(Tile(number, color, TileType.REGULAR))
             }
         }
+        // two jokers
         tiles.add(Tile(TileNumber.ANY,TileColor.ANY, TileType.JOKER))
         tiles.add(Tile(TileNumber.ANY,TileColor.ANY, TileType.JOKER))
 

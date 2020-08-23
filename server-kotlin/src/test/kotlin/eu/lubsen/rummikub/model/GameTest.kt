@@ -51,6 +51,6 @@ internal class GameTest {
     fun createTiles() {
         val game = Game("MyTestGame", Player("player1"))
         val tiles = game.createTiles()
-        assert(tiles.size == (4 * 13) + 2)
+        assert(tiles.size == (4 * 13 * 2) + 2)
     }
 }
