@@ -1,5 +1,6 @@
 package eu.lubsen.rummikub.core
 
+import eu.lubsen.rummikub.idl.server.PlayedTileSetsMerged
 import eu.lubsen.rummikub.idl.server.PlayedTookFromHeap
 import eu.lubsen.rummikub.idl.server.ServerMessageType
 import eu.lubsen.rummikub.model.*
@@ -7,9 +8,11 @@ import eu.lubsen.rummikub.util.Failure
 import eu.lubsen.rummikub.util.Success
 import io.vertx.core.json.JsonObject
 import org.junit.jupiter.api.Test
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 internal class GamePlayTest {
 
@@ -55,7 +58,7 @@ internal class GamePlayTest {
             heap = listOf(Tile(type = TileType.REGULAR, color = TileColor.RED, number = TileNumber.TEN)))
 
         val move = Move(game, player1, MoveType.SPLIT)
-        move.moveLocation = MoveLocation.HAND
+        move.targetLocation = MoveLocation.HAND
         val tileSetId = player1.hand.values.elementAt(0).id
         move.setSplit(location = MoveLocation.HAND, tileSetId = tileSetId, index = 1)
         val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
@@ -78,8 +81,13 @@ internal class GamePlayTest {
         )
         assertEquals(tileSetId.toString(), JsonObject(message.toJson()).getString("originalId"))
 
-        // TODO assert that the original id is not present anymore at the location
-        // TODO assert that the new sets are present at the location
+        assertFalse(game.getCurrentPlayer().hand.containsKey(tileSetId))
+        assertTrue(game.getCurrentPlayer().hand.containsKey(
+            UUID.fromString(
+                JsonObject(message.toJson()).getJsonObject("leftSet").getString("id"))))
+        assertTrue(game.getCurrentPlayer().hand.containsKey(
+            UUID.fromString(
+                JsonObject(message.toJson()).getJsonObject("rightSet").getString("id"))))
     }
 
     @Test
@@ -93,14 +101,16 @@ internal class GamePlayTest {
         player1.initialPlay = true
         game.addPlayer(player2)
         player2.initialPlay = true
+        val handSet1 = parseTileSet("Red1-Red2-Red3")
+        val handSet2 = parseTileSet("Red4-Red5-Red6")
         startGameWith(game = game,
             tableTiles = listOf(parseTileSet("Bla1-Bla2-Bla3"), parseTileSet("Blu1-Blu2-Blu3")),
-            playerOneHand = listOf(parseTileSet("Red1-Red2-Red3"), parseTileSet("Red4-Red5-Red6")),
+            playerOneHand = listOf(handSet1, handSet2),
             playerTwoHand = listOf(parseTileSet("Yel1-Red1-Blu1"), parseTileSet("Bla5")),
             heap = listOf(Tile(type = TileType.REGULAR, color = TileColor.RED, number = TileNumber.TEN)))
 
         val move = Move(game, player1, MoveType.MERGE)
-        move.moveLocation = MoveLocation.HAND
+        move.targetLocation = MoveLocation.HAND
         move.setMerger(MoveLocation.HAND, player1.hand.values.elementAt(0).id, player1.hand.values.elementAt(1).id, 0)
         val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
 
@@ -113,8 +123,51 @@ internal class GamePlayTest {
             """.trimIndent(),
             JsonObject(message.toJson()).getJsonObject("tileSet").getJsonArray("tiles").list.toString()
         )
-        // TODO assert that the original id's are not present anymore at the location
-        // TODO assert that the new set is present at the location
+        assertFalse(game.getCurrentPlayer().hand.containsKey(handSet1.id))
+        assertFalse(game.getCurrentPlayer().hand.containsKey(handSet2.id))
+        assertTrue(game.getCurrentPlayer().hand.containsKey(
+            UUID.fromString(
+                JsonObject(message.toJson()).getJsonObject("tileSet").getString("id"))))
+    }
+
+    @Test
+    fun playerMovesAndMergesTilesHandToTable() {
+        val player1 = Player("tester1")
+        val player2 = Player("tester2")
+        val game = Game("moveAndMergeTest", player1)
+        val lounge = Lounge()
+        lounge.games[game.name] = game
+        game.addPlayer(player1)
+        player1.initialPlay = true
+        game.addPlayer(player2)
+        player2.initialPlay = true
+        val handSet = parseTileSet("Bla1-Bla2")
+        val tableSet = parseTileSet("Bla3-Bla4-Bla5")
+        startGameWith(game = game,
+            tableTiles = listOf(tableSet),
+            playerOneHand = listOf(handSet),
+            playerTwoHand = listOf(parseTileSet("Yel1-Red1-Blu1")),
+            heap = listOf(Tile(type = TileType.REGULAR, color = TileColor.RED, number = TileNumber.TEN)))
+
+        val move = Move(game, player1, MoveType.MOVE_AND_MERGE)
+        move.setMove(sourceLoc = MoveLocation.HAND, targetLoc = MoveLocation.TABLE, tileSetId = handSet.id)
+        move.setMerger(location = MoveLocation.TABLE, sourceId = handSet.id, targetId = tableSet.id, index = 0)
+        val result = handlePlayerMove(lounge = lounge, gameName = game.name, move = move)
+
+        assertTrue(result.isSuccess())
+        val message = (result as Success).result()[0]
+        assertEquals(ServerMessageType.PlayedTileSetsMovedAndMerged, message.type)
+        assertEquals(
+            """
+                [{color=BLACK, number=1, isJoker=false}, {color=BLACK, number=2, isJoker=false}, {color=BLACK, number=3, isJoker=false}, {color=BLACK, number=4, isJoker=false}, {color=BLACK, number=5, isJoker=false}]
+            """.trimIndent(),
+            JsonObject(message.toJson()).getJsonObject("tileSet").getJsonArray("tiles").list.toString()
+        )
+        assertFalse(game.getCurrentPlayer().hand.containsKey(handSet.id))
+        assertFalse(game.table.containsKey(tableSet.id))
+        assertTrue(game.table.containsKey(
+            UUID.fromString(
+                JsonObject(message.toJson()).getJsonObject("tileSet").getString("id"))))
     }
 
     @Test
@@ -420,7 +473,7 @@ internal class GamePlayTest {
             tableTiles = listOf(parseTileSet("Yel6-Yel7-Yel8-Yel9")),
             playerOneHand = listOf(parseTileSet("Red10-Blu10-Yel10"), parseTileSet("Bla1-Bla2")),
             playerTwoHand = listOf(parseTileSet("Yel1")),
-            heap = listOf())
+            heap = listOf(Tile(TileNumber.THIRTEEN, TileColor.BLACK, TileType.REGULAR)))
 
         val arrangeMove = Move(game, player1, MoveType.SPLIT)
         arrangeMove.setSplit(location = MoveLocation.TABLE, tileSetId = game.table.values.first().id, index = 2)

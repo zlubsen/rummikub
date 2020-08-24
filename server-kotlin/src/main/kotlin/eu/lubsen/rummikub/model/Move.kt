@@ -7,18 +7,25 @@ class Move constructor(val game: Game, val player : Player, val moveType: MoveTy
     lateinit var sourceSetId : UUID
     lateinit var targetSetId : UUID
     lateinit var tilesToRelocate : UUID
-    var moveLocation = MoveLocation.NONE
+    var sourceLocation = MoveLocation.NONE
+    var targetLocation = MoveLocation.NONE
 
     fun setSplit(location: MoveLocation, tileSetId: UUID, index : Int) {
-        moveLocation = location
+        targetLocation = location
         sourceSetId = tileSetId
         operationIndex = index
     }
 
     fun setMerger(location: MoveLocation, sourceId : UUID, targetId : UUID, index: Int) {
-        moveLocation = location
+        targetLocation = location
         sourceSetId = sourceId
         targetSetId = targetId
         operationIndex = index
+    }
+
+    fun setMove(sourceLoc : MoveLocation, targetLoc : MoveLocation, tileSetId: UUID) {
+        sourceLocation = sourceLoc
+        targetLocation = targetLoc
+        tilesToRelocate = tileSetId
     }
 }

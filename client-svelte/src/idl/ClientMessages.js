@@ -86,7 +86,21 @@ function msgMerge(playerId, gameId, sourceId, targetId, index, location) {
         sourceId : sourceId,
         targetId : targetId,
         index : index,
-        moveLocation : location
+        targetLocation : location
+    }
+}
+
+function msgMoveAndMerge(playerId, gameId, sourceId, targetId, index, sourceLocation, targetLocation) {
+    return {
+        messageType : "PlayerMove",
+        moveType : "MOVE_AND_MERGE",
+        playerId : playerId,
+        gameId : gameId,
+        sourceId : sourceId,
+        targetId : targetId,
+        index : index,
+        sourceLocation : sourceLocation,
+        targetLocation : targetLocation
     }
 }
 
@@ -97,7 +111,7 @@ function msgSplit(playerId, gameId, tileSetId, index, location) {
         playerId : playerId,
         gameId : gameId,
         splitSetId : tileSetId,
-        splitIndex : index,
+        index : index,
         moveLocation : location
     }
 }
@@ -163,6 +177,7 @@ export {
     msgRequestPlayerListForGame,
     msgRequestGameState,
     msgMerge,
+    msgMoveAndMerge,
     msgSplit,
     msgHandToTable,
     msgTableToHand,

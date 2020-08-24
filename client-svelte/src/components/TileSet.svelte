@@ -69,7 +69,8 @@
                 sourceId: sourceId,
                 targetId: targetId,
                 index: index,
-                location: location
+                sourceLocation: event.dataTransfer.getData(TILESET_SOURCE_LOCATION_TYPE),
+                targetLocation: location
             });
         }
     }

@@ -42,7 +42,7 @@ internal class GameTest {
         game.addPlayer(player2)
         game.startGame()
 
-        assert(game.heap.size == ((4 * 13) + 2 - (2 * 14)))
+        assert(game.heap.size == ((2 * 4 * 13) + 2 - (2 * 14)))
         assert(player1.hand.size == 14)
         assert(player2.hand.size == 14)
     }

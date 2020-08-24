@@ -24,6 +24,7 @@ enum class ServerMessageType {
     PlayerTookFromHeap,
     PlayedTileSetSplit,
     PlayedTileSetsMerged,
+    PlayedTileSetsMovedAndMerged,
     MessageResponse,
     GameListResponse,
     PlayerListResponse,
@@ -332,6 +333,24 @@ class PlayedTileSetsMerged constructor(eventNumber : Long, private val move : Ti
     }
 }
 
+class PlayedTileSetsMovedAndMerged constructor(eventNumber : Long, private val move : TilesMovedAndMerged) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.PlayedTileSetsMovedAndMerged
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "sourceLocation" : "${move.sourceLocation}",
+                "targetLocation" : "${move.targetLocation}",
+                "sourceId" : "${move.sourceId}",
+                "targetId" : "${move.targetId}",
+                "tileSet" : ${tileSetToJson(move.mergedSet)}
+            }
+        """.trimIndent()
+    }
+}
+
 class MessageResponse constructor(eventNumber : Long, private val message : String) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.MessageResponse
 
@@ -407,7 +426,6 @@ class PlayerListForGameResponse constructor(eventNumber : Long, private val game
     }
 }
 
-// TODO test message
 class GameStateResponse constructor(eventNumber: Long, private val game: Game, private val player: Player) : ServerMessage(eventNumber = eventNumber) {
     override val type: ServerMessageType = ServerMessageType.GameStateResponse
 

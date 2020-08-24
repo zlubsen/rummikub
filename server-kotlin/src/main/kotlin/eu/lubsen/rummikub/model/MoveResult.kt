@@ -4,6 +4,7 @@ import java.util.UUID
 
 sealed class MoveResult(open val type : MoveType)
 
+data class TilesMovedAndMerged(override val type : MoveType, val playerId : UUID, val mergedSet : TileSet, val sourceId : UUID, val targetId : UUID, val sourceLocation: MoveLocation, val targetLocation: MoveLocation) : MoveResult(type)
 data class TilesMerged(override val type : MoveType, val playerId : UUID, val mergedSet : TileSet, val sourceId : UUID, val targetId : UUID, val location: MoveLocation) : MoveResult(type)
 data class TilesSplit(override val type : MoveType, val playerId : UUID, val leftSet : TileSet, val rightSet : TileSet, val originalId : UUID, val location: MoveLocation) : MoveResult(type)
 data class TurnEnded(override val type : MoveType, val playerId : UUID, val nextPlayerId : UUID) : MoveResult(type)

@@ -191,6 +191,26 @@
                     table = table;
                 }
                 break;
+            case "PlayedTileSetsMovedAndMerged":
+                // TODO perhaps split this message in one for the current player, and one for the others, like with a regular HAND/TABLE move
+                if (message.sourceLocation === "TABLE") {
+                    table.delete(message.sourceId);
+                    table = table;
+                    if (message.playerId === playerId) {
+                        hand.delete(message.targetId);
+                        hand.set(message.tileSet.id, message.tileSet);
+                        hand = hand;
+                    }
+                } else if (message.sourceLocation === "HAND") {
+                    if (message.playerId === playerId) {
+                        hand.delete(message.sourceId);
+                        hand = hand;
+                    }
+                    table.delete(message.targetId);
+                    table.set(message.tileSet.id, message.tileSet);
+                    table = table;
+                }
+                break;
             case "GameListResponse":
                 games.clear();
                 message.games.forEach(function (game) {
@@ -315,7 +335,16 @@
     }
 
     function eventMerge(event) {
-        const msg = IDL.msgMerge(playerId, currentGame, event.detail.sourceId, event.detail.targetId, event.detail.index, event.detail.location);
+        let msg;
+        if (event.detail.sourceLocation === event.detail.targetLocation)
+            msg = IDL.msgMerge(playerId, currentGame,
+                event.detail.sourceId, event.detail.targetId, event.detail.index,
+                event.detail.targetLocation);
+        else
+            msg = IDL.msgMoveAndMerge(playerId, currentGame,
+                event.detail.sourceId, event.detail.targetId, event.detail.index,
+                event.detail.sourceLocation, event.detail.targetLocation);
+
         connection.sendJson(msg);
     }
 
@@ -561,12 +590,8 @@
 <!-- - can we merge with not owned tilesets during initial play?-->
 
 <!--UX:-->
-<!-- - directly move tileset location and merge with other tileset (e.g., directly append a tile to a set on the table)-->
-<!-- - hide merge zones in different location (or add move to directly move and merge)-->
 <!-- - prevent page from navigating away-->
 <!-- - handle when a player disconnects/leaves an ongoing game (show message, cancel the game...)-->
-
-<!-- - cannot take back a played joker in the same turn; because a joker is not counted as part of the played tiles list...-->
 
 <!-- - send gamestate containing ‘boardIsValid’ and ‘hasPlayedInTurn’ values, to enable/disable the End Turn button.-->
 <!-- - after player 1 wins, and removes the game, other players in the game get back in the lounge, but still see the previous game (should get an update of the gameslist / remove the finished game). Message ‘Game xxx removed’ is displayed.-->
@@ -576,3 +601,8 @@
 <!-- - during initial play: create separate messages for when table is valid/invalid and when player did/did not meet initial play value-->
 <!-- - add move: reset/undo all mutations in this turn (or even more eleborate: add undo button for single action)-->
 <!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
+
+<!-- - UX: request players in game when joining a game (to correctly show in header bar)-->
+<!-- - GameLogic: Implement scoring mechanism when a player wins-->
+<!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
+<!-- - GameLogic: cannot drag back a tileset containing a joker from the table to hand (when placed there yourself in same turn); because a joker is not counted as part of the played tiles list...-->
