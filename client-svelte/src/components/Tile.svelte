@@ -14,12 +14,6 @@
             default:
                 return "gray-600";
         }
-        // if(color === "BLACK")
-        //     return "black";
-        // if(color === "any")
-        //     return "gray";
-
-        // return color.toLowerCase() + "-600";
     }
 </script>
 
@@ -29,7 +23,6 @@
     {:else}
         {tile.number}
     {/if}
-    <slot></slot>
 </div>
 
 <style></style>

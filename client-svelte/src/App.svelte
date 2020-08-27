@@ -8,6 +8,7 @@
     import GameList from "./components/GameList.svelte";
     import PlayerHand from "./components/PlayerHand.svelte";
     import TurnControls from "./components/TurnControls.svelte";
+    import Modal from "./components/Modal.svelte";
     import {log} from "./stores/logMessage.js";
     import {onDestroy} from "svelte";
 
@@ -34,7 +35,7 @@
     let table = new Map();
     let hand = new Map();
 
-    const testData = false;
+    const testData = true;
     if(testData) setTestData();
 
     const unsubscribeLogging = log.subscribe(value => {
@@ -494,11 +495,42 @@
             });
     }
 
+    const welcomeHeader = [
+        {char:'R',color:'black'},
+        {char:'U',color:'yellow-600'},
+        {char:'M',color:'blue-600'},
+        {char:'M',color:'black'},
+        {char:'I',color:'red-600'},
+        {char:'K',color:'yellow-600'},
+        {char:'U',color:'red-600'},
+        {char:'B',color:'blue-600'}];
 </script>
 
 <div id="fullscreen-container" class="full-screen-app app-layout w-screen bg-gray-900">
-    <header id="header" class="header-area h-16 bg-blue-600 p-3">
-        <span class="font-inter text-2xl text-white">Welcome to Rummikub!</span>
+<!--    <Modal show="{playerId===undefined}">-->
+<!--        <svg slot="icon" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">-->
+<!--            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />-->
+<!--        </svg>-->
+<!--        <h3 slot="header" class="font-inter text-lg leading-6 font-medium text-gray-900" id="modal-headline">-->
+<!--            Welcome and please register.-->
+<!--        </h3>-->
+<!--        <div slot="message" class="mt-2">-->
+<!--            <p class="font-inter text-sm leading-5 text-gray-500">-->
+<!--                Please enter your name to play.-->
+<!--            </p>-->
+<!--        </div>-->
+<!--        <div slot="actions" class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">-->
+<!--            <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>-->
+<!--        </div>-->
+<!--    </Modal>-->
+    <header id="header" class="header-area h-16 bg-blue-600 p-2">
+        <span>
+            {#each welcomeHeader as tile}
+                <span class="p-1 h-16 border border-gray-300 rounded bg-orange-200 text-center align-text-top text-3xl text-{tile.color}">
+                    {tile.char}
+                </span>
+            {/each}
+        </span>
         {#if playerName}
             <span class="pl-2 pr-2 font-inter text-white">Player: {playerName}</span>
         {/if}
@@ -598,8 +630,6 @@
 
 <!-- - ongoing game shows up twice in the gamelist >> possible due to GameStateResponse -->
 
-<!-- - during initial play: create separate messages for when table is valid/invalid and when player did/did not meet initial play value-->
-<!-- - add move: reset/undo all mutations in this turn (or even more eleborate: add undo button for single action)-->
 <!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
 
 <!-- - UX: request players in game when joining a game (to correctly show in header bar)-->

@@ -96,12 +96,12 @@
      class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-gray-500 hover:cursor-pointer">
     {#if showMergeZones}
         <div class="merge-zones-container">
-                <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50"
                      on:drop={(event)=>eventDropMerge(event, tileSet.id, 0)}
                      on:dragover={(event)=>eventDragOver(event, tileSet.id)}
                      in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
                 {#each tileSet.tiles as tile, i}
-                    <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50 z-10"
+                    <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50"
                          on:drop={(event)=>eventDropMerge(event, tileSet.id, i+1)}
                          on:dragover={(event)=>eventDragOver(event, tileSet.id)}
                          in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
