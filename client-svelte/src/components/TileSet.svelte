@@ -20,6 +20,8 @@
     let showSplitZones = false;
     $: showMergeZones = busyDragging && !dragSelf;
 
+    let hoverDropZone;
+
     const unsubscribeDragging = dragging.subscribe(value => {
         busyDragging = value;
     });
@@ -40,12 +42,23 @@
     function eventDragEnd(event, tileSetId) {
         event.preventDefault();
 
-        showSplitZones = false;
+        showSplitZones = true;
         dragging.set(false);
         dragSelf = false;
     }
 
+    function eventDragEnter(event, dropZoneId) {
+        hoverDropZone = dropZoneId;
+        event.preventDefault();
+    }
+
+    function eventDragLeave(event, dropZoneId) {
+        hoverDropZone = undefined;
+        event.preventDefault();
+    }
+
     function eventDragOver(event, tileSetId) {
+        currentDragOver = tileSetId;
         event.preventDefault();
     }
 
@@ -91,36 +104,33 @@
      on:dragend={(event)=>eventDragEnd(event, tileSet.id)}
      on:mouseover={(event)=>eventHoverStart(event, tileSet.id)}
      on:mouseout={(event)=>eventHoverEnd(event, tileSet.id)}
-     on:mousemove={()=>{showSplitZones = true;}}
      class:invalid-highlight="{!tileSet.isValid}"
      class="relative flex-none flex items-center px-2 py-1 mx-2 my-1 z-20 hover:bg-gray-500 hover:cursor-pointer">
-    {#if showMergeZones}
         <div class="merge-zones-container">
-                <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50"
+                <div id={tileSet.id+ZONE_MERGE+0} class="w-5 h-full bg-gray-400 opacity-50 z-10 transition duration-500 ease-in-out"
+                     class:hidden={!showMergeZones}
+                     class:dragged-over={hoverDropZone=== (tileSet.id+ZONE_MERGE+0)}
                      on:drop={(event)=>eventDropMerge(event, tileSet.id, 0)}
-                     on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-                     in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
+                     on:dragenter={(event)=>eventDragEnter(event, tileSet.id+ZONE_MERGE+0)}
+                     on:dragleave={(event)=>eventDragLeave(event, tileSet.id+ZONE_MERGE+0)}>&nbsp;</div>
                 {#each tileSet.tiles as tile, i}
-                    <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50"
+                    <div id={tileSet.id+ZONE_MERGE+(i+1)} class="w-5 h-full bg-gray-400 opacity-50 z-10 transition duration-500 ease-in-out"
+                         class:hidden={!showMergeZones}
+                         class:dragged-over={hoverDropZone=== (tileSet.id+ZONE_MERGE+(i+1))}
                          on:drop={(event)=>eventDropMerge(event, tileSet.id, i+1)}
-                         on:dragover={(event)=>eventDragOver(event, tileSet.id)}
-                         in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}">&nbsp;</div>
+                         on:dragenter={(event)=>eventDragEnter(event, tileSet.id+ZONE_MERGE+(i+1))}
+                         on:dragleave={(event)=>eventDragLeave(event, tileSet.id+ZONE_MERGE+(i+1))}>&nbsp;</div>
                 {/each}
         </div>
-    {/if}
-<!--    class:hidden="{!showMergeZones}"-->
     {#each tileSet.tiles as tile, i}
         <Tile {tile}></Tile>
     {/each}
     <div class="split-zones-container">
         {#each tileSet.tiles as tile, i}
             {#if i < (tileSet.tiles.length - 1)}
-                <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="w-5 h-full opacity-75 hover:bg-gray-600 hover:cursor-ew-resize"
+                <div id={tileSet.id+ZONE_SPLIT + (i+1)} class="transition duration-500 ease-in-out w-5 h-full opacity-75 hover:bg-gray-600 hover:cursor-ew-resize"
                      class:hidden={!showSplitZones}
-                     in:scale="{{duration: 400, opacity: 0.5, start: 0.5, easing: quintOut}}"
-                     on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}>
-                    &nbsp;
-                </div>
+                     on:click={(event)=>eventClickSplit(event, tileSet.id, i+1)}>&nbsp;</div>
             {/if}
         {/each}
     </div>
@@ -139,5 +149,8 @@
     }
     .invalid-highlight {
         @apply bg-red-700;
+    }
+    .dragged-over {
+        @apply bg-blue-600;
     }
 </style>

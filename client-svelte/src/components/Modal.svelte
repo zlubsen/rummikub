@@ -2,7 +2,7 @@
     export let show = false;
 </script>
 
-<div class="fixed z-20 w-full overflow-y-auto" class:hidden="{!show}">
+<div class="fixed z-10 w-full overflow-y-auto">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <!--
           Background overlay, show/hide based on modal state.
@@ -14,7 +14,7 @@
             From: "opacity-100"
             To: "opacity-0"
         -->
-        <div class="fixed inset-0 transition-opacity">
+        <div class="fixed inset-0 transition-opacity" class:hidden="{!show}">
             <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
@@ -56,4 +56,4 @@
         </div>
     </div>
 </div>
-<slot/>
+<slot/> <!-- Fix needed for svelte error when using more than 2 named slots; needs a 'default' slot -->

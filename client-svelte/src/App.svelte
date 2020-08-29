@@ -4,13 +4,12 @@
     import {LOCATION_TABLE, LOCATION_HAND} from "./utils/GameUtils.js";
     import * as IDL from "./idl/ClientMessages.js";
     import RegisterPlayer from "./components/RegisterPlayer.svelte";
-    import GameBoard from "./components/GameBoard.svelte";
     import GameList from "./components/GameList.svelte";
-    import PlayerHand from "./components/PlayerHand.svelte";
     import TurnControls from "./components/TurnControls.svelte";
     import Modal from "./components/Modal.svelte";
     import {log} from "./stores/logMessage.js";
     import {onDestroy} from "svelte";
+    import TileArea from "./components/TileArea.svelte";
 
     const updateInterval = 120000; // every 2 minutes
     const serverAddress = "ws://192.168.8.158:8080/join"
@@ -35,8 +34,8 @@
     let table = new Map();
     let hand = new Map();
 
-    const testData = true;
-    if(testData) setTestData();
+    const testData = false;
+    if (testData) setTestData();
 
     const unsubscribeLogging = log.subscribe(value => {
         logMessage = value;
@@ -46,7 +45,7 @@
 
     const receiveHandler = function (message) {
         let messageType = message.messageType
-        // console.log("received msg: " + message.messageType);
+
         switch (messageType) {
             case "MessageResponse":
                 logMessage = message.message;
@@ -263,7 +262,7 @@
         }
     }
 
-    const closeHandler = function() {
+    const closeHandler = function () {
         logMessage = "You were disconnected from the server.";
         clearState();
         // TODO cleanup client state
@@ -399,6 +398,15 @@
             {
                 gameName: "Mies"
             });
+        players.set("p1", "MyPlayer");
+        players.set("p2", "OtherPlayer");
+        players.set("p3", "AnotherPlayer");
+
+        playerId = "p1";
+        playerName = players.get(playerId);
+        currentGame = "Aap";
+        currentPlayer = "p1";
+        playersInCurrentGame = ["p1", "p2", "p3"];
 
         table.set("xxsdf1",
             {
@@ -496,14 +504,14 @@
     }
 
     const welcomeHeader = [
-        {char:'R',color:'black'},
-        {char:'U',color:'yellow-600'},
-        {char:'M',color:'blue-600'},
-        {char:'M',color:'black'},
-        {char:'I',color:'red-600'},
-        {char:'K',color:'yellow-600'},
-        {char:'U',color:'red-600'},
-        {char:'B',color:'blue-600'}];
+        {char: 'R', color: 'black'},
+        {char: 'U', color: 'yellow-600'},
+        {char: 'M', color: 'blue-600'},
+        {char: 'M', color: 'black'},
+        {char: 'I', color: 'red-600'},
+        {char: 'K', color: 'yellow-600'},
+        {char: 'U', color: 'red-600'},
+        {char: 'B', color: 'blue-600'}];
 </script>
 
 <div id="fullscreen-container" class="full-screen-app app-layout w-screen bg-gray-900">
@@ -523,31 +531,38 @@
 <!--            <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>-->
 <!--        </div>-->
 <!--    </Modal>-->
-    <header id="header" class="header-area h-16 bg-blue-600 p-2">
-        <span>
+    <header id="header" class="header-area h-16 bg-blue-600 p-2 flex flex-no-wrap items-stretch justify-between">
+        <div>
             {#each welcomeHeader as tile}
                 <span class="p-1 h-16 border border-gray-300 rounded bg-orange-200 text-center align-text-top text-3xl text-{tile.color}">
                     {tile.char}
                 </span>
             {/each}
-        </span>
-        {#if playerName}
-            <span class="pl-2 pr-2 font-inter text-white">Player: {playerName}</span>
-        {/if}
-        {#if currentGame}
-            <span class="pl-2 pr-2 font-inter text-white">Game: {currentGame}</span>
-            {#each playersInCurrentGame as playerId}
-                <span class:bg-orange-500={playerId===currentPlayer}>{players.get(playerId)}</span>
-            {/each}
-        {/if}
+        </div>
+        <div class="text-left font-inter text-white flex flex-col">
+            <div class="text-left font-inter text-white">
+            {#if playerName}
+                    Player: {playerName}
+            {/if}
+            </div>
+            <div class="text-left font-inter text-white">
+            {#if currentGame}
+                Game: {currentGame}
+            {/if}
+            </div>
+        </div>
+        <div class="grid grid-cols-2 grid-rows-2">
+        {#each playersInCurrentGame as playerId}
+            <span class:bg-orange-500={playerId===currentPlayer}>{players.get(playerId)}</span>
+        {/each}
+        </div>
         <RegisterPlayer playerId="{playerId}" on:connect={eventJoin} on:disconnect={eventLeave}/>
     </header>
     <div class="board-area m-1">
-        <GameBoard table="{table}" isPlayersTurn="{isPlayersTurn}"
-            on:merge={eventMerge}
-            on:split={eventSplit}
-            on:moveTiles="{eventMoveTiles}"
-        />
+        <TileArea tiles="{table}" areaLocation={LOCATION_TABLE} isPlayersTurn="{isPlayersTurn}"
+                  on:merge={eventMerge}
+                  on:split={eventSplit}
+                  on:moveTiles={eventMoveTiles}/>
     </div>
     <div class="game-area m-1">
         <GameList games="{games}" currentGame="{currentGame}" playerId="{playerId}" playersInSelectedGame="{playersInSelectedGame}"
@@ -560,11 +575,10 @@
         />
     </div>
     <div class="hand-area h-48 m-1">
-        <PlayerHand hand="{hand}"
-            on:merge={eventMerge}
-            on:split={eventSplit}
-            on:moveTiles={eventMoveTiles}
-        />
+        <TileArea tiles="{hand}" areaLocation={LOCATION_HAND} isPlayersTurn="{true}"
+          on:merge={eventMerge}
+          on:split={eventSplit}
+          on:moveTiles={eventMoveTiles}/>
     </div>
     <div class="control-area m-1">
         <TurnControls {gameState} {isPlayersTurn}
@@ -636,3 +650,5 @@
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->
 <!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
 <!-- - GameLogic: cannot drag back a tileset containing a joker from the table to hand (when placed there yourself in same turn); because a joker is not counted as part of the played tiles list...-->
+
+<!-- - Refactor incoming message handling to kill the giant switch contruct (put all messages in a map with specific handlers)-->

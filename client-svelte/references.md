@@ -8,11 +8,11 @@ Building:
 
 TailwindCSS
 - https://tailwindcss.com
-- https://tailwindcss-custom-forms.netlify.app
+- https://tailwindcss-custom-forms.netlify.app - styling for form elements
 - https://nerdcave.com/tailwind-cheat-sheet?ref=builtwithtailwind.com
 - https://www.tailwindtoolbox.com
-- https://merakiui.com
-- https://tailwindui.com
+- https://merakiui.com - pre-designed components
+- https://tailwindui.com - pre-designed components
 
 TailWindCSS icw Svelte
 - https://dev.to/sarioglu/using-svelte-with-tailwindcss-a-better-approach-47ph
@@ -26,7 +26,7 @@ Inter Font
 Drag&Drop functionality:
 - https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API
 
-HTML/CSS Flex/CSS Grid:
+HTML / CSS Flex / CSS Grid:
 - https://css-tricks.com/snippets/css/a-guide-to-flexbox/
 - http://www.csstutorial.org/flex-both.html
 - Absolute positioning in a flexbox: codepen.io/ekadagami/pen/mdyPybq
