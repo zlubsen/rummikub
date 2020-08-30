@@ -25,7 +25,7 @@
 <div id="tileArea-{areaLocation}"
      on:drop={eventMoveTiles}
      on:dragover={eventDragOver}
-     class="flex flex-row flex-wrap items-start content-start h-full"
+     class="flex flex-row flex-wrap items-start content-start h-full overflow-y-auto"
      class:active-player={isPlayersTurn}
      class:inactive-player={!isPlayersTurn}>
     {#if tiles.size === 0 }
