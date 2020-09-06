@@ -47,47 +47,57 @@ class ServerVerticle : AbstractVerticle() {
 
         var webSocket = context.request().upgrade()
         webSocket.handler(this::receiveMessageHandler)
-        webSocket.closeHandler {
-            var playerId : UUID? = null
-            clientSockets.forEach {
-                    (id, socket) ->
-                if (socket.isClosed)
-                    playerId = id
-            }
-            if (playerId != null) {
-                clientSockets.remove(key = playerId!!)
-
-                when (val gameResult = findGameForPlayer(lounge = lounge, player = lounge.players[playerId!!]!!)) {
-                    is Success -> {
-                        val game = gameResult.result()
-                        when (val message = playerDisconnects(lounge = lounge, player = lounge.players[playerId!!]!!)) {
-                            is Success -> {
-                                sendMessage(message.result().addRecipient(game.players.keys))
-                            }
-                            is Failure -> {
-                                sendMessage(MessageResponse(
-                                    eventNumber = 0,
-                                    message = "A player disconnected, but something went wrong in handling it")
-                                    .addRecipient(recipients = game.players.keys))
-                            }
-                        }
-                    }
-                    is Failure -> { }
-                }
-            }
-        }
+        webSocket.closeHandler { closeHandler() }
 
         val player = Player(playerName = userName)
-        clientSockets[player.id] = webSocket
-        playerConnects(lounge = lounge, player = player)
+        when(playerNameExists(lounge = lounge, name = player.playerName)) {
+            true -> {
+                webSocket.writeTextMessage(PlayerNameExists(eventNumber = 0, name = player.playerName).toJson())
+                webSocket.close()
+            }
+            false -> {
+                clientSockets[player.id] = webSocket
+                playerConnects(lounge = lounge, player = player)
 
-        sendMessage(
-            Connected(eventNumber = 0, player = player)
-                .addRecipient(recipient = player.id))
-        sendMessage(
-            PlayerConnected(eventNumber = 0, player = player)
-                .addRecipient(recipients = lounge.players.keys)
-        )
+                sendMessage(
+                    Connected(eventNumber = 0, player = player)
+                        .addRecipient(recipient = player.id))
+                sendMessage(
+                    PlayerConnected(eventNumber = 0, player = player)
+                        .addRecipient(recipients = lounge.players.keys)
+                )
+            }
+        }
+    }
+
+    private fun closeHandler() {
+        var closedPlayerIds = mutableListOf<UUID>();
+        clientSockets.forEach {
+                (id, socket) ->
+            if (socket.isClosed)
+                closedPlayerIds.add(id)
+        }
+        closedPlayerIds.forEach { playerId ->
+            clientSockets.remove(key = playerId)
+
+            when (val gameResult = findGameForPlayer(lounge = lounge, player = lounge.players[playerId]!!)) {
+                is Success -> {
+                    val game = gameResult.result()
+                    when (val message = playerDisconnects(lounge = lounge, player = lounge.players[playerId]!!)) {
+                        is Success -> {
+                            sendMessage(message.result().addRecipient(game.players.keys))
+                        }
+                        is Failure -> {
+                            sendMessage(MessageResponse(
+                                eventNumber = 0,
+                                message = "A player disconnected, but something went wrong in handling it")
+                                .addRecipient(recipients = game.players.keys))
+                        }
+                    }
+                }
+                is Failure -> { }
+            }
+        }
     }
 
     private fun receiveMessageHandler(buffer : Buffer) =

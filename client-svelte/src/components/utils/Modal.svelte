@@ -2,7 +2,7 @@
     export let show = false;
 </script>
 
-<div class="fixed z-10 w-full overflow-y-auto">
+<div class="fixed z-30 w-full overflow-y-auto">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <!--
           Background overlay, show/hide based on modal state.

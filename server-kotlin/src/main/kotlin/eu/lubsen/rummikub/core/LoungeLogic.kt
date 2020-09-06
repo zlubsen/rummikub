@@ -12,6 +12,10 @@ import eu.lubsen.rummikub.util.Result
 import eu.lubsen.rummikub.util.Success
 import java.util.UUID
 
+fun playerNameExists(lounge: Lounge, name : String) : Boolean {
+    return lounge.players.filter { it.value.playerName == name }.isNotEmpty()
+}
+
 fun playerIsOwner(lounge : Lounge, gameName : String, playerId : UUID) : Boolean {
     return isValidGameName(lounge = lounge, gameName = gameName)
             && isValidPlayerId(lounge = lounge, playerId = playerId)

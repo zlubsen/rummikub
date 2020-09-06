@@ -1,5 +1,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import { flip } from 'svelte/animate';
+    import { quintOut } from 'svelte/easing';
     import TileSet from "./TileSet.svelte";
     import { TILESET_SOURCE_LOCATION_TYPE, createMoveTilesEvent } from "../utils/GameUtils.js";
 
@@ -31,8 +33,10 @@
     {#if tiles.size === 0 }
         <span class="text-xl text-gray-400 p-2">No tiles in this area.</span>
     {/if}
-    {#each [...tiles] as [id, tileSet]}
-        <TileSet {tileSet} location="{areaLocation}" on:merge on:split></TileSet>
+    {#each [...tiles] as [id, tileSet] (id)}
+        <div animate:flip="{{delay: 250, duration: 250, easing: quintOut}}">
+            <TileSet {tileSet} location="{areaLocation}" on:merge on:split></TileSet>
+        </div>
     {/each}
 </div>
 

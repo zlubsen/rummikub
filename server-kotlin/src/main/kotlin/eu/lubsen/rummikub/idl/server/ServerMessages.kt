@@ -8,6 +8,7 @@ enum class ServerMessageType {
     Connected,
     PlayerConnected,
     PlayerDisconnected,
+    PlayerNameExists,
     GameCreated,
     GameRemoved,
     PlayerJoinedGame,
@@ -86,6 +87,20 @@ class PlayerDisconnected constructor(eventNumber : Long, val player : Player) : 
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "player" : ${playerToJson(player)}
+            }
+        """.trimIndent()
+    }
+}
+
+class PlayerNameExists constructor(eventNumber: Long, val name: String) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.PlayerNameExists
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "error" : "A player with name '$name' already exists."
             }
         """.trimIndent()
     }
@@ -341,6 +356,7 @@ class PlayedTileSetsMovedAndMerged constructor(eventNumber : Long, private val m
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
+                "playerId" : "${move.playerId}",
                 "sourceLocation" : "${move.sourceLocation}",
                 "targetLocation" : "${move.targetLocation}",
                 "sourceId" : "${move.sourceId}",

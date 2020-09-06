@@ -1,7 +1,5 @@
 <script>
     import { createEventDispatcher, onDestroy } from 'svelte';
-    import { scale } from 'svelte/transition';
-    import { quintOut } from 'svelte/easing';
     import Tile from "./Tile.svelte";
     import { dragging } from "../stores/dragTiles.js";
     import { TILESET_DATA_TYPE, TILESET_SOURCE_LOCATION_TYPE } from "../utils/GameUtils.js";
@@ -77,6 +75,8 @@
 
             let sourceId = event.dataTransfer.getData(TILESET_DATA_TYPE);
             let targetId = tileSetId;
+
+            dragging.set(false);
 
             dispatch('merge', {
                 sourceId: sourceId,

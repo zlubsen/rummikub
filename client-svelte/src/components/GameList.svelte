@@ -6,11 +6,11 @@
 
     export let games;
     export let currentGame;
-    export let playerId;
+    export let player;
     export let playersInSelectedGame;
     let selectedGame = null;
     let createGameName;
-    $: isOwner = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).owner == playerId;
+    $: isOwner = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).owner == player.id;
     $: currentIsStarted = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).gameState === "STARTED";
 
     function clickGameList(event) {
@@ -87,9 +87,9 @@
         <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="form-input m-1">Join Game</button>
         <br/>
 
-        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!playerId}" class="form-input w-full m-1">
+        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!player}" class="form-input w-full m-1">
         <br/>
-        <button id="createGameButton" on:click={clickCreateGame} disabled="{!playerId||!createGameName}" class="form-input m-1">Create game</button>
+        <button id="createGameButton" on:click={clickCreateGame} disabled="{!player||!createGameName}" class="form-input m-1">Create game</button>
     {/if}
 </div>
 
