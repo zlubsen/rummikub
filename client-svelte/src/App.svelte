@@ -92,7 +92,7 @@
             currentGame = message.gameName;
             connection.sendJson(IDL.msgRequestPlayerListForGame(player.id, currentGame));
         }
-        playersInCurrentGame.push(players.get(message.playerId).name);
+        playersInCurrentGame.push(players.get(message.playerId));
         playersInCurrentGame = playersInCurrentGame;
         writeLogMessage("Player " + players.get(message.playerId).name + " joined game " + message.gameName);
     });
@@ -170,12 +170,12 @@
         writeLogMessage(players.get(message.playerId).name + " took a tile from the heap.");
     });
     messageHandlers.set("PlayedTileSetSplit", (message) => {
-        if (message.location === "HAND") {
+        if (message.location === LOCATION_HAND) {
             hand.delete(message.originalId);
             hand.set(message.leftSet.id, message.leftSet);
             hand.set(message.rightSet.id, message.rightSet);
             hand = hand;
-        } else if (message.location === "TABLE") {
+        } else if (message.location === LOCATION_TABLE) {
             table.delete(message.originalId);
             table.set(message.leftSet.id, message.leftSet);
             table.set(message.rightSet.id, message.rightSet);
@@ -183,12 +183,12 @@
         }
     });
     messageHandlers.set("PlayedTileSetsMerged", (message) => {
-        if (message.location === "HAND") {
+        if (message.location === LOCATION_HAND) {
             hand.delete(message.sourceId);
             hand.delete(message.targetId);
             hand.set(message.tileSet.id, message.tileSet);
             hand = hand;
-        } else if (message.location === "TABLE") {
+        } else if (message.location === LOCATION_TABLE) {
             table.delete(message.sourceId);
             table.delete(message.targetId);
             table.set(message.tileSet.id, message.tileSet);
@@ -196,24 +196,26 @@
         }
     });
     messageHandlers.set("PlayedTileSetsMovedAndMerged", (message) => {
-        // TODO perhaps split this message in one for the current player, and one for the others, like with a regular HAND/TABLE move
-        if (message.sourceLocation === "TABLE") {
+        if (message.sourceLocation === LOCATION_TABLE) {
             table.delete(message.sourceId);
-            table = table;
-            if (message.playerId === player.id) {
-                hand.delete(message.targetId);
-                hand.set(message.tileSet.id, message.tileSet);
-                hand = hand;
-            }
-        } else if (message.sourceLocation === "HAND") {
-            if (message.playerId === player.id) {
-                hand.delete(message.sourceId);
-                hand = hand;
-            }
+            hand.delete(message.targetId);
+            hand.set(message.tileSet.id, message.tileSet);
+        } else if (message.sourceLocation === LOCATION_HAND) {
+            hand.delete(message.sourceId);
             table.delete(message.targetId);
             table.set(message.tileSet.id, message.tileSet);
-            table = table;
         }
+        table = table;
+        hand = hand;
+    });
+    messageHandlers.set("TableChangedMovedAndMerged", (message) => {
+        if (message.sourceLocation === LOCATION_TABLE) {
+            table.delete(message.sourceId);
+        } else if (message.sourceLocation === LOCATION_HAND) {
+            table.delete(message.targetId);
+            table.set(message.tileSet.id, message.tileSet);
+        }
+        table = table;
     });
     messageHandlers.set("MessageResponse", (message) => {
         writeLogMessage(message.message);
@@ -355,6 +357,7 @@
     }
 
     function eventMerge(event) {
+        console.log("eventMerge: src = " +event.detail.sourceLocation + " - tgt = " +event.detail.targetLocation);
         let msg;
         if (event.detail.sourceLocation === event.detail.targetLocation)
             msg = IDL.msgMerge(player.id, currentGame,
@@ -425,7 +428,7 @@
         player = players.get("p1");
         currentGame = "Aap";
         currentPlayer = "p1";
-        playersInCurrentGame = ["p1", "p2", "p3"];
+        playersInCurrentGame = [{id:"p1", name:"MyPlayer"}, {id:"p2", name:"OtherPlayer"}, {id:"p3", name:"AnotherPlayer"}];
 
         table.set("xxsdf1",
             {
@@ -641,10 +644,10 @@
 <!-- - GameList: players in game as collapsing sub-items in list-->
 <!-- - prevent page from navigating away-->
 <!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
-<!--    - also show sidebars when hovering for some time (clicking will just make it faster)-->
 
 <!--Logic:-->
 <!-- - handle when a player disconnects/leaves an ongoing game (show message, cancel the game...)-->
+<!-- - client: handle gamestate SUSPENDED-->
 <!-- - after player 1 wins, and removes the game, other players in the game get back in the lounge, but still see the previous game (should get an update of the gameslist / remove the finished game). Message ‘Game xxx removed’ is displayed.-->
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->
 <!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
@@ -652,10 +655,3 @@
 
 <!--TBD-->
 <!-- - send gamestate containing ‘boardIsValid’ and ‘hasPlayedInTurn’ values, to enable/disable the End Turn button.-->
-<!-- - ongoing game shows up twice in the gamelist >> possible due to GameStateResponse -->
-
-<!-- - move + merge, hand and table not properly updated (shows no change, move is actually correct when pressing ‘end turn’)-->
-<!--&gt; VM1462:4 Uncaught SyntaxError: Unexpected token a in JSON at position 145-->
-<!--at JSON.parse (<anonymous>)-->
-<!--    at WebSocket.receive (Connection.js:52)-->
-
