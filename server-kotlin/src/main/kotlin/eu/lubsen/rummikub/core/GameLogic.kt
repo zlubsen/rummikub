@@ -120,8 +120,15 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
         is Success -> when (result.result()) {
             is TilesMovedAndMerged -> {
                 val moveResult = result.result() as TilesMovedAndMerged
-                val message : ServerMessage = PlayedTileSetsMovedAndMerged(eventNumber = 0, move = moveResult).addRecipient(recipients = game.players.keys)
-                Success(listOf(message))
+                val items = mutableListOf<ServerMessage>()
+                items.add(
+                    PlayedTileSetsMovedAndMerged(eventNumber = 0, move = moveResult)
+                        .addRecipient(recipient = moveResult.playerId))
+                items.add(
+                    TableChangedMovedAndMerged(eventNumber = 0, move = moveResult)
+                        .addRecipient(recipients = game.players.keys.filterNot { it == moveResult.playerId })
+                )
+                Success(items.toList())
             }
             is TilesMerged -> {
                 val moveResult = result.result() as TilesMerged
@@ -209,7 +216,7 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                             PlayedTilesTableToHand(eventNumber = 0, move = moveOk)
                                 .addRecipient(recipient = moveOk.playerId),
                             TableChangedTableToHand(eventNumber = 0, move = moveOk)
-                                .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
+                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId })
                         )
                     }
                     MoveType.HAND_TO_TABLE -> {
@@ -218,7 +225,7 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                             PlayedTilesHandToTable(eventNumber = 0, move = moveOk)
                                 .addRecipient(moveOk.playerId),
                             TableChangedHandToTable(eventNumber = 0, move = moveOk)
-                                .addRecipient(recipients = game.players.keys.filterNot { moveOk.playerId == it })
+                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId })
                         )
                     }
                     else -> {
@@ -521,6 +528,10 @@ fun endTurn(game: Game) {
 
 fun playerWins(game: Game) {
     game.gameState = GameState.FINISHED
+}
+
+fun gameSuspends(game: Game) {
+    game.gameState = GameState.SUSPENDED
 }
 
 fun hasPlayerWon(game: Game, player: Player) : Boolean {

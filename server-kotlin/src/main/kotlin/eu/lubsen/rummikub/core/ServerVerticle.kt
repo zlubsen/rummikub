@@ -83,19 +83,25 @@ class ServerVerticle : AbstractVerticle() {
             when (val gameResult = findGameForPlayer(lounge = lounge, player = lounge.players[playerId]!!)) {
                 is Success -> {
                     val game = gameResult.result()
+                    gameSuspends(game)
                     when (val message = playerDisconnects(lounge = lounge, player = lounge.players[playerId]!!)) {
                         is Success -> {
-                            sendMessage(message.result().addRecipient(game.players.keys))
+                            sendMessage(message = message.result().addRecipient(recipients = game.players.keys))
+                            sendMessage(messages = game.players.values
+                                .map {
+                                    GameStateResponse(eventNumber = 0, game = game, player = it)
+                                        .addRecipient(recipient = it.id)
+                                }.toList())
                         }
                         is Failure -> {
                             sendMessage(MessageResponse(
                                 eventNumber = 0,
-                                message = "A player disconnected, but something went wrong in handling it")
+                                message = "A player disconnected from your game, but something went wrong in handling it")
                                 .addRecipient(recipients = game.players.keys))
                         }
                     }
                 }
-                is Failure -> { }
+                is Failure -> { } // Player is not currently in a game. Fine.
             }
         }
     }

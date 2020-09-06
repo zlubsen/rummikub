@@ -26,6 +26,7 @@ enum class ServerMessageType {
     PlayedTileSetSplit,
     PlayedTileSetsMerged,
     PlayedTileSetsMovedAndMerged,
+    TableChangedMovedAndMerged,
     MessageResponse,
     GameListResponse,
     PlayerListResponse,
@@ -357,6 +358,24 @@ class PlayedTileSetsMovedAndMerged constructor(eventNumber : Long, private val m
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
                 "playerId" : "${move.playerId}",
+                "sourceLocation" : "${move.sourceLocation}",
+                "targetLocation" : "${move.targetLocation}",
+                "sourceId" : "${move.sourceId}",
+                "targetId" : "${move.targetId}",
+                "tileSet" : ${tileSetToJson(move.mergedSet)}
+            }
+        """.trimIndent()
+    }
+}
+
+class TableChangedMovedAndMerged constructor(eventNumber: Long, private val move: TilesMovedAndMerged) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.TableChangedMovedAndMerged
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
                 "sourceLocation" : "${move.sourceLocation}",
                 "targetLocation" : "${move.targetLocation}",
                 "sourceId" : "${move.sourceId}",
