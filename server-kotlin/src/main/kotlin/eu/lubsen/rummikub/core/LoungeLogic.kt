@@ -35,7 +35,6 @@ fun playerConnects(lounge: Lounge, player: Player) {
     lounge.players[player.id] = player
 }
 
-// TODO: how to handle a player dropping out of an ongoing game?
 fun playerDisconnects(lounge: Lounge, player: Player) : Result<ServerMessage> {
     lounge.players.remove(key = player.id)
 

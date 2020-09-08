@@ -81,7 +81,7 @@ class Game constructor(val name: String, val owner : Player) {
     }
 
     fun stopGame() {
-        gameState = GameState.FINISHED
+        gameState = GameState.SUSPENDED
     }
 
     fun setTurn() {

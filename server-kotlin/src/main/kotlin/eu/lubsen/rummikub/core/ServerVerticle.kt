@@ -79,12 +79,13 @@ class ServerVerticle : AbstractVerticle() {
         }
         closedPlayerIds.forEach { playerId ->
             clientSockets.remove(key = playerId)
+            var player = lounge.players[playerId]!!
 
-            when (val gameResult = findGameForPlayer(lounge = lounge, player = lounge.players[playerId]!!)) {
+            when (val gameResult = findGameForPlayer(lounge = lounge, player = player)) {
                 is Success -> {
                     val game = gameResult.result()
                     gameSuspends(game)
-                    when (val message = playerDisconnects(lounge = lounge, player = lounge.players[playerId]!!)) {
+                    when (val message = playerDisconnects(lounge = lounge, player = player)) {
                         is Success -> {
                             sendMessage(message = message.result().addRecipient(recipients = game.players.keys))
                             sendMessage(messages = game.players.values
@@ -96,7 +97,7 @@ class ServerVerticle : AbstractVerticle() {
                         is Failure -> {
                             sendMessage(MessageResponse(
                                 eventNumber = 0,
-                                message = "A player disconnected from your game, but something went wrong in handling it")
+                                message = "Player ${player.playerName} disconnected from your game, but something went wrong in handling it")
                                 .addRecipient(recipients = game.players.keys))
                         }
                     }
