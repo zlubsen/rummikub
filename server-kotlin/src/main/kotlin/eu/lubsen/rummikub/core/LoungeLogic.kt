@@ -70,6 +70,13 @@ fun removeGame(lounge : Lounge, gameName : String) : Result<ServerMessage> {
     }
 }
 
+fun cleanupGame(lounge: Lounge, game: Game) : Result<ServerMessage> {
+    return if(game.players.isEmpty())
+        removeGame(lounge, game.name)
+    else
+        Failure("Game ${game.name} still has players in it.")
+}
+
 // TODO test
 fun findGameForPlayer(lounge: Lounge, player: Player) : Result<Game> {
     val games = lounge.games.filter { (name,game) -> game.players.containsKey(player.id) }

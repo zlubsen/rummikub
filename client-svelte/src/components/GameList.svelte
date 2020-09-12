@@ -59,38 +59,37 @@
     }
 </script>
 
-<div id="gameList" class="bg-blue-600 h-full p-2">
+<div id="gameList" class="bg-blue-600 h-full p-1 pr-2 flex flex-col justify-start items-stretch">
+    <div class="relative">
     <SelectableList on:select={clickGameList} items="{[...games.values()]}" bind:selectedItem={selectedGame} />
-    {#if (selectedGame && (playersInSelectedGame !== undefined)) }
-        <ul class="border h-24">
-        {#each playersInSelectedGame as player}
-            <li>{player.name}</li>
-        {/each}
-        </ul>
+    {#if (selectedGame && (playersInSelectedGame !== undefined || playersInSelectedGame.size > 0 )) }
+        <div class="absolute inset-x-0 bottom-0 bg-blue-400">
+            <ul class="h-24">
+            {#each playersInSelectedGame as player}
+                <li>{player.name}</li>
+            {/each}
+            </ul>
+        </div>
     {/if}
+    </div>
+    <div class="my-1 flex flex-col justify-between">
     {#if currentGame }
         {#if isOwner }
             {#if currentIsStarted }
-                <button id="stopGameButton" on:click={clickStopGame} class="form-input m-1">Stop game</button>
-                <br/>
+                <button id="stopGameButton" on:click={clickStopGame} class="form-input">Stop game</button>
             {:else}
-                <button id="startGameButton" on:click={clickStartGame} class="form-input m-1">Start game</button>
-                <br/>
-                <button id="removeGameButton" on:click={clickRemoveGame} class="form-input m-1">Remove game '{currentGame}'</button>
-                <br/>
+                <button id="startGameButton" on:click={clickStartGame} class="form-input">Start game '{currentGame}'</button>
+                <button id="removeGameButton" on:click={clickRemoveGame} class="form-input">Remove game '{currentGame}'</button>
             {/if}
         {:else}
-            <button id="leaveGameButton" on:click={clickLeaveGame} class="form-input m-1">Leave Game '{currentGame}'</button>
-            <br/>
+            <button id="leaveGameButton" on:click={clickLeaveGame} class="form-input">Leave Game '{currentGame}'</button>
         {/if}
     {:else}
-        <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="form-input m-1">Join Game</button>
-        <br/>
-
-        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!player}" class="form-input w-full m-1">
-        <br/>
-        <button id="createGameButton" on:click={clickCreateGame} disabled="{!player||!createGameName}" class="form-input m-1">Create game</button>
+        <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="form-input">Join Game</button>
+        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!player}" class="form-input mt-2">
+        <button id="createGameButton" on:click={clickCreateGame} disabled="{!player||!createGameName}" class="form-input">Create game</button>
     {/if}
+    </div>
 </div>
 
 <style>

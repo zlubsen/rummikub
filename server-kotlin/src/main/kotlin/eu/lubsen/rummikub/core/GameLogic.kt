@@ -22,17 +22,35 @@ fun joinGame(game: Game, player: Player) : Result<ServerMessage> {
         Failure("Game is not open for joining (${game.gameState}).")
 }
 
-fun leaveGame(game: Game, player: Player) : Result<ServerMessage> {
-    // TODO add possibility for leaving an ongoing game
-    return if (GameState.STARTED != game.gameState) {
-        game.players.remove(player.id)
-        Success(
-            PlayerLeftGame(eventNumber = 0, game = game, player = player)
-                .addRecipient(recipients = game.players.keys)
-                .addRecipient(recipient = player.id)
-        )
-    } else
-        Failure("Cannot leave an ongoing game (${game.gameState}).")
+fun leaveGame(game: Game, player: Player) : Result<List<ServerMessage>> {
+    return when (game.gameState) {
+        GameState.STARTED -> {
+            // Suspend the game when the first player leaves an ongoing game
+            val messages = mutableListOf<ServerMessage>()
+            game.stopGame()
+            messages.add(
+                GameStopped(eventNumber = 0, game = game)
+                    .addRecipient(recipients = game.players.keys))
+
+            game.players.remove(player.id)
+            messages.add(
+                PlayerLeftGame(eventNumber = 0, game = game, player = player)
+                    .addRecipient(recipients = game.players.keys)
+                    .addRecipient(recipient = player.id))
+            messages.addAll(
+                game.players.values.map { GameStateResponse(eventNumber = 0, game = game, player = it).addRecipient(recipient = it.id) }.toList()
+            )
+            Success(messages.toList())
+        }
+        else -> {
+            game.players.remove(player.id)
+            Success(listOf(
+                PlayerLeftGame(eventNumber = 0, game = game, player = player)
+                    .addRecipient(recipients = game.players.keys)
+                    .addRecipient(recipient = player.id))
+            )
+        }
+    }
 }
 
 fun startGame(game: Game) : Result<ServerMessage> {
@@ -528,10 +546,6 @@ fun endTurn(game: Game) {
 
 fun playerWins(game: Game) {
     game.gameState = GameState.FINISHED
-}
-
-fun gameSuspends(game: Game) {
-    game.gameState = GameState.SUSPENDED
 }
 
 fun hasPlayerWon(game: Game, player: Player) : Boolean {

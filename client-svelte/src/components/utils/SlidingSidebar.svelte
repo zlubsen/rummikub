@@ -60,14 +60,12 @@ function labelMouseEnter(event) {
 
 {#if !minimized }
 <div id="sidebar" class="absolute top-0 right-0 bg-blue-600 w-64 h-full
-    transform translate-x-2 z-20"
+    transform translate-x-2 z-20
+    flex flex-col items-stretch"
     transition:fade={{delay: 250, duration: 300, easing: quintOut }}
     on:mouseleave={sidebarMouseLeave}
     on:mouseenter={sidebarMouseEnter}>
-    <div class="absolute top-0 right-0 font-inter text-inter-3xl text-right align-text-top text-orange-500 cursor-pointer transform -translate-x-4 -translate-y-2" on:click={minimize}>
-        &minus;
-    </div>
-    <div class="h-6 w-4"></div>
+    <header class="h-8 self-end font-inter text-inter-lg text-orange-500 text-right align-text-top cursor-pointer" on:click={minimize}>X&nbsp;&nbsp;</header>
     <slot name="content">There should be some content here...</slot>
 </div>
 {/if}

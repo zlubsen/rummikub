@@ -35,3 +35,10 @@ HTML / CSS Flex / CSS Grid:
 - https://www.hongkiat.com/blog/css-grid-layout-module/
 - https://css-tricks.com/things-ive-learned-css-grid-layout/
 - https://css-tricks.com/complete-guide-to-css-functions/
+
+HTML UI components:
+- https://www.w3schools.com/howto/howto_css_sidenav_buttons.asp
+- https://www.w3schools.com/howto/howto_js_off-canvas.asp
+
+HTML other:
+- https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload

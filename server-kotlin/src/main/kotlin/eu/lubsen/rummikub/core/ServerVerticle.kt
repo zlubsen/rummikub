@@ -14,10 +14,11 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
 import java.util.*
+import java.util.logging.Level
+import java.util.logging.LogRecord
+import java.util.logging.Logger
 
 class ServerVerticle : AbstractVerticle() {
-//    private lateinit var heartbeatTimer : Timer
-
     private var clientSockets = mutableMapOf<UUID, ServerWebSocket>()
 
     private var lounge = Lounge()
@@ -31,7 +32,7 @@ class ServerVerticle : AbstractVerticle() {
         router.get("/join").handler(this::joinClient)
         server.requestHandler(router).listen(8080)
 
-        println("Server running")
+        Logger.getAnonymousLogger().log(LogRecord(Level.INFO,"Server running"))
     }
 
     private fun handleRoot(context: RoutingContext) {
@@ -84,15 +85,23 @@ class ServerVerticle : AbstractVerticle() {
             when (val gameResult = findGameForPlayer(lounge = lounge, player = player)) {
                 is Success -> {
                     val game = gameResult.result()
-                    gameSuspends(game)
+                    game.stopGame()
                     when (val message = playerDisconnects(lounge = lounge, player = player)) {
                         is Success -> {
-                            sendMessage(message = message.result().addRecipient(recipients = game.players.keys))
+                            sendMessage(message = message.result()
+                                .addRecipient(recipients = game.players.keys))
+                            sendMessage(message = GameStopped(eventNumber = 0, game = game)
+                                .addRecipient(recipients = game.players.keys))
                             sendMessage(messages = game.players.values
-                                .map {
-                                    GameStateResponse(eventNumber = 0, game = game, player = it)
-                                        .addRecipient(recipient = it.id)
-                                }.toList())
+                                .map { GameStateResponse(eventNumber = 0, game = game, player = it)
+                                    .addRecipient(recipient = it.id) }.toList())
+
+                            when(val cleaned = cleanupGame(lounge = lounge, game = game)) {
+                                is Success -> {
+                                    sendMessage(message = cleaned.result())
+                                }
+                                else -> {}
+                            }
                         }
                         is Failure -> {
                             sendMessage(MessageResponse(

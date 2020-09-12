@@ -1,0 +1,25 @@
+	- initial state: owner creates game
+Joining
+	- Joining: player joins game
+	> Started: owner starts game
+
+Started
+	- Started: player move
+	> Stopped: owner stops game
+	> Stopped: player leaves game
+	> Stopped: player disconnects
+	> Finished: player wins
+
+Stopped
+	> Stopped: player leaves
+	> Stopped: player disconnects
+	> Cleanup: owner removes game
+	> Cleanup: owner disconnects
+
+Finished
+	> Finished: player leaves
+	> Cleanup: owner removes game
+	> Cleanup: owner disconnects
+
+Cleanup
+	- final state

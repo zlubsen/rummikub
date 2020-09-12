@@ -104,33 +104,24 @@
         writeLogMessage("Player " + players.get(message.playerId).name + " left game " + message.gameName);
     });
     messageHandlers.set("GameStarted", (message) => {
-        if (games.has(message.gameName))
-            games.get(message.gameName).gameState = message.gameState;
+        updateGameState(message.gameName, message.gameState);
+
         if (currentGame !== undefined && currentGame === message.gameName)
             connection.sendJson(IDL.msgRequestGameState(player.id, currentGame));
         writeLogMessage("Game " + currentGame + " started");
     });
     messageHandlers.set("GameStopped", (message) => {
-        if (games.has(message.gameName)) {
-            games.get(message.gameName).gameState = message.gameState;
-            games = games;
-        }
-        if (currentGame === message.gameName) {
-            // TODO cleanup this game
-            // games.delete(message.gameName);
-            // games = games
-        }
+        updateGameState(message.gameName, message.gameState);
+
         writeLogMessage("Game " + message.gameName + " was stopped.");
     });
     messageHandlers.set("GameFinished", (message) => {
         writeLogMessage(players.get(message.winner).name + " wins the game!");
-        if (games.has(message.gameName)) {
-            games.get(message.gameName).gameState = message.gameState;
-            games = games;
-        }
-        // TODO design mechanism to return to lounge with no current game, clean up finished game
-        // - owner removes the game
-        // - other players leave the game
+        updateGameState(message.gameName, message.gameState);
+    });
+    messageHandlers.set("GameSuspended", (message) => {
+        writeLogMessage("Game " + games.get(message.gameName) + " suspended.");
+        updateGameState(message.gameName, message.gameState);
     });
     messageHandlers.set("PlayedTilesHandToTable", (message) => {
         if (hand.has(message.tileSet.id)) {
@@ -299,7 +290,9 @@
     function clearState() {
         player = undefined;
         players.clear();
+        players = players;
         games.clear();
+        games = games;
 
         clearInterval(requestGamesInterval);
         clearInterval(requestPlayersInterval);
@@ -313,7 +306,16 @@
         playersInCurrentGame = [];
 
         table.clear()
+        table = table;
         hand.clear();
+        hand = hand;
+    }
+
+    function updateGameState(gameName, newState) {
+        if (games.has(gameName)) {
+            games.get(gameName).gameState = gameState;
+            games = games;
+        }
     }
 
     function writeLogMessage(message) {
@@ -411,15 +413,18 @@
     function setTestData() {
         games.set("Aap",
             {
-                gameName: "Aap"
+                gameName: "Aap",
+                gameState:"STARTED"
             });
         games.set("Noot",
             {
-                gameName: "Noot"
+                gameName: "Noot",
+                gameState:"STARTED"
             });
         games.set("Mies",
             {
-                gameName: "Mies"
+                gameName: "Mies",
+                gameState:"STARTED"
             });
         players.set("p1", {id:"p1", name:"MyPlayer"});
         players.set("p2", {id:"p2", name:"OtherPlayer"});
@@ -565,7 +570,7 @@
         </div>
         <div class="h-full w-1/4 grid grid-cols-2 grid-rows-2">
         {#each playersInCurrentGame as playerInGame}
-            <div class="px-2 text-left align-middle" class:bg-orange-500={playerInGame.id===currentPlayer}>{playerInGame.name}</div>
+            <div class="px-2 text-gray-500 text-left align-middle" class:text-orange-500={playerInGame.id===currentPlayer}>{playerInGame.name}</div>
         {/each}
         </div>
         <RegisterPlayer {player} {invalidPlayerNameError} on:connect={eventJoin} on:disconnect={eventLeave}/>
@@ -577,7 +582,7 @@
                   on:moveTiles={eventMoveTiles}/>
         <SlidingSidebar auto_minimize="true">
             <header slot="label">Games</header>
-            <div slot="content">
+            <div class="sidebar-content-height" slot="content">
                 <GameList games="{games}" currentGame="{currentGame}" player="{player}" playersInSelectedGame="{playersInSelectedGame}"
                            on:gameDetails={eventRequestPlayersInGameList}
                            on:joinGame={eventJoinGame} on:leaveGame={eventLeaveGame}
@@ -596,7 +601,7 @@
           on:moveTiles={eventMoveTiles}/>
         <SlidingSidebar auto_minimize="true">
             <header slot="label">Turn</header>
-            <div slot="content">
+            <div class="sidebar-content-height" slot="content">
                 <TurnControls {gameState} {isPlayersTurn}
                               on:endTurn={eventEndTurn}
                               on:resetTurn={eventResetTurn}
@@ -638,17 +643,18 @@
     .hand-area {
         grid-area: hand;
     }
+    .sidebar-content-height {
+        /* Needed because the sidebar is translated by 2 rem */
+        height: calc(100% - 2rem);
+    }
 </style>
 
 <!--UX:-->
-<!-- - GameList: players in game as collapsing sub-items in list-->
 <!-- - prevent page from navigating away-->
-<!-- - after a game is won, the owner can press ‘Start game’ again. Either remove, or restart the game with the same players-->
+<!-- - review ability to click game and turn control buttons in all game states-->
+<!-- - styling of buttons-->
 
 <!--Logic:-->
-<!-- - handle when a player disconnects/leaves an ongoing game (show message, cancel the game...)-->
-<!-- - client: handle gamestate SUSPENDED-->
-<!-- - after player 1 wins, and removes the game, other players in the game get back in the lounge, but still see the previous game (should get an update of the gameslist / remove the finished game). Message ‘Game xxx removed’ is displayed.-->
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->
 <!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
 <!-- - GameLogic: cannot drag back a tileset containing a joker from the table to hand (when placed there yourself in same turn); because a joker is not counted as part of the played tiles list...-->

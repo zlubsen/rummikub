@@ -28,7 +28,7 @@ fun handleJoinGame(lounge : Lounge, gameName : String, playerId : UUID) : Result
         Failure("No game with name '$gameName' exists.")
 }
 
-fun handleLeaveGame(lounge : Lounge, gameName : String, playerId : UUID) : Result<ServerMessage> {
+fun handleLeaveGame(lounge : Lounge, gameName : String, playerId : UUID) : Result<List<ServerMessage>> {
     return if (isValidGameName(lounge = lounge, gameName = gameName))
         leaveGame(game = lounge.games[gameName]!!, player = lounge.players[playerId]!!)
     else

@@ -4,5 +4,5 @@ enum class GameState {
     JOINING,
     STARTED,
     FINISHED,
-    SUSPENDED
+    STOPPED
 }

@@ -18,10 +18,10 @@ function unselect(event) {
 
 </script>
 
-<div class="bg-gray-100 p-2 overflow-y-scroll">
-        <ul class="border h-56" on:click={unselect}>
+<div class="bg-blue-500 p-1 overflow-y-scroll">
+        <ul class="h-56" on:click={unselect}>
             {#each items as item}
-                <li class="list-none p-1 font-inter text-base"
+                <li class="list-none p-0 font-inter text-base"
                 class:selected={item.gameName == selectedItem}
                 on:click={(event)=>selectItem(event, item.gameName)}>
                     {item.gameName}
