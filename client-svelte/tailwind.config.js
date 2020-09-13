@@ -1,5 +1,8 @@
 module.exports = {
-  purge: [],
+  purge: [
+    './src/**/*.html',
+    './src/**/*.svelte',
+  ],
   theme: {
     cursor: {
       auto: 'auto',
@@ -18,6 +21,9 @@ module.exports = {
       none: 'none',
     },
     extend: {},
+    future: {
+      purgeLayersByDefault: true,
+    },
   },
   variants: {
     backgroundColor: ['responsive', 'hover'],
