@@ -1,12 +1,21 @@
 import svelte from 'rollup-plugin-svelte';
-import sveltePreprocess from 'svelte-preprocess';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import postcss from 'rollup-plugin-postcss';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import sveltePreprocess from 'svelte-preprocess';
+import {config} from 'dotenv';
+import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
+// const env_path = production ? '~/Documents/Github/rummikub/client-svelte/envs/production' : '~/Documents/Github/rummikub/client-svelte/envs/development';
+
+const preprocess = sveltePreprocess({
+	sourceMap: !production,
+	postcss: {
+		plugins: [require("tailwindcss"), require("autoprefixer")],
+	},
+});
 
 export default {
 	input: 'src/main.js',
@@ -17,16 +26,15 @@ export default {
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
-		postcss({extract: true}),
 		svelte({
-			preprocess: sveltePreprocess({ postcss: true }),
 			// enable run-time checks when not in production
 			dev: !production,
 			// we'll extract any component CSS out into
 			// a separate file - better for performance
-			css: css => {
-				css.write('public/build/bundle.css');
+			css: (css) => {
+				css.write("bundle.css");
 			},
+			preprocess,
 		}),
 
 		// If you have external dependencies installed from
@@ -39,6 +47,17 @@ export default {
 			dedupe: ['svelte']
 		}),
 		commonjs(),
+
+		replace({
+			__config: JSON.stringify({
+				env: {
+					isProd: production,
+					...config().parsed
+					// ...config({ path: env_path }).parsed
+					// SERVER_URL : production ? process.env.API_URL : "ws://192.168.8.158:8080/join"
+				}
+			}),
+		}),
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated

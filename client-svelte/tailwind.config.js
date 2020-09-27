@@ -1,8 +1,12 @@
+const production = !process.env.ROLLUP_WATCH;
 module.exports = {
-  purge: [
-    './src/**/*.html',
-    './src/**/*.svelte',
-  ],
+  purge: {
+    content: [
+      './src/**/*.html',
+      './src/**/*.svelte',
+      './src/index.html'
+    ],
+    enabled: production},
   theme: {
     cursor: {
       auto: 'auto',
@@ -21,8 +25,9 @@ module.exports = {
       none: 'none',
     },
     extend: {},
-    future: {
+    future: { // for tailwind 2.0 compat
       purgeLayersByDefault: true,
+      removeDeprecatedGapUtilities: true,
     },
   },
   variants: {
