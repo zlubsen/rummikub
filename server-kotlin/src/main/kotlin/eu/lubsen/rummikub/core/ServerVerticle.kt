@@ -40,7 +40,7 @@ class ServerVerticle : AbstractVerticle() {
             JsonObject()
                 .put("server-type","rummikub-server-kotlin")
                 .put("health", "running")
-                .put("web-socket-join-endpoint", "/").encode())
+                .put("websocket-join-endpoint", "/join").encode())
     }
 
     private fun joinClient(context: RoutingContext) {

@@ -143,6 +143,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                     PlayedTileSetsMovedAndMerged(eventNumber = 0, move = moveResult)
                         .addRecipient(recipient = moveResult.playerId))
                 items.add(
+                    TurnState(eventNumber = 0, game = game, player = game.getPlayer(moveResult.playerId)!!)
+                        .addRecipient(recipient = moveResult.playerId))
+                items.add(
                     TableChangedMovedAndMerged(eventNumber = 0, move = moveResult)
                         .addRecipient(recipients = game.players.keys.filterNot { it == moveResult.playerId })
                 )
@@ -159,7 +162,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
-                Success(listOf(message))
+                Success(listOf(message,
+                    TurnState(eventNumber = 0, game = game, player = game.getPlayer(moveResult.playerId)!!)
+                    .addRecipient(recipient = moveResult.playerId)))
             }
             is TilesSplit -> {
                 val moveResult = result.result() as TilesSplit
@@ -172,7 +177,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                     MoveLocation.TABLE -> message.addRecipient(game.players.keys)
                     MoveLocation.NONE -> return Failure("Incorrect move location set.")
                 }
-                Success(listOf(message))
+                Success(listOf(message,
+                    TurnState(eventNumber = 0, game = game, player = game.getPlayer(moveResult.playerId)!!)
+                    .addRecipient(recipient = moveResult.playerId)))
             }
             is TurnEnded -> {
                 val items = mutableListOf<ServerMessage>()
@@ -234,7 +241,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                             PlayedTilesTableToHand(eventNumber = 0, move = moveOk)
                                 .addRecipient(recipient = moveOk.playerId),
                             TableChangedTableToHand(eventNumber = 0, move = moveOk)
-                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId })
+                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId }),
+                            TurnState(eventNumber = 0, game = game, player = game.getPlayer(moveOk.playerId)!!)
+                                .addRecipient(recipient = moveOk.playerId)
                         )
                     }
                     MoveType.HAND_TO_TABLE -> {
@@ -243,7 +252,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                             PlayedTilesHandToTable(eventNumber = 0, move = moveOk)
                                 .addRecipient(moveOk.playerId),
                             TableChangedHandToTable(eventNumber = 0, move = moveOk)
-                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId })
+                                .addRecipient(recipients = game.players.keys.filterNot { it == moveOk.playerId }),
+                            TurnState(eventNumber = 0, game = game, player = game.getPlayer(moveOk.playerId)!!)
+                                .addRecipient(recipient = moveOk.playerId)
                         )
                     }
                     else -> {
@@ -262,6 +273,8 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                     message = "The layout was reset to the start of the turn.")
                     .addRecipient(recipient = game.getCurrentPlayer().id)
                 items.add(message)
+                items.add(TurnState(eventNumber = 0, game = game, player = game.getPlayer(game.getCurrentPlayer().id)!!)
+                    .addRecipient(recipient = game.getCurrentPlayer().id))
                 items.addAll(game.players.values
                     .map {
                         GameStateResponse(eventNumber = 0, game = game, player = it)

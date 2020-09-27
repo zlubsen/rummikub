@@ -1,6 +1,9 @@
 package eu.lubsen.rummikub.idl.server
 
 import eu.lubsen.rummikub.core.isValidTileSet
+import eu.lubsen.rummikub.core.playerHasInitialPlay
+import eu.lubsen.rummikub.core.playerHasPlayedInTurn
+import eu.lubsen.rummikub.core.tableIsValid
 import eu.lubsen.rummikub.model.*
 import java.util.UUID
 
@@ -31,7 +34,8 @@ enum class ServerMessageType {
     GameListResponse,
     PlayerListResponse,
     PlayerListForGameResponse,
-    GameStateResponse
+    GameStateResponse,
+    TurnState
 }
 
 sealed class ServerMessage constructor(val eventNumber : Long) {
@@ -469,7 +473,7 @@ class GameStateResponse constructor(eventNumber: Long, private val game: Game, p
             {
                 "messageType" : "$type",
                 "eventNumber" : $eventNumber,
-                "game" : ${gameToJson(game)},
+                "game" : ${gameToJson(game = game)},
                 "currentPlayer" : "${game.getCurrentPlayer().id}",
                 "gameState" : "${game.gameState}",
                 "table" : ${game.table.values.joinToString(
@@ -490,6 +494,24 @@ class GameStateResponse constructor(eventNumber: Long, private val game: Game, p
                     postfix = "]")
                     { playerToJson(it) }
                 } 
+            }
+        """.trimIndent()
+    }
+}
+
+class TurnState constructor(eventNumber: Long, private val game: Game, private val player: Player) : ServerMessage(eventNumber = eventNumber) {
+    override val type: ServerMessageType = ServerMessageType.TurnState
+
+    override fun toJson(): String {
+        return """
+            {
+                "messageType" : "$type",
+                "eventNumber" : $eventNumber,
+                "game" : ${gameToJson(game = game)},
+                "currentPlayer" : "${game.getCurrentPlayer().id}",
+                "tableIsValid" : "${tableIsValid(game = game)}",
+                "hasPlayedInTurn" : "${playerHasPlayedInTurn(game = game, player = player)}",
+                "hasInitialPlay" : "${playerHasInitialPlay(player = player)}"
             }
         """.trimIndent()
     }
