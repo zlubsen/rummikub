@@ -2,9 +2,15 @@
 
 Svelte:
 - https://svelte.dev
+- https://sveltesociety.dev
 
 Building:
+- https://github.com/chrisdhanaraj/svelte-tailwind-integration/blob/master/rollup.config.js
 - https://codechips.me/rollup-vs-parcel-vs-webpack-for-svelte-development/
+
+Builing - Future:
+- pika > snowpack
+- https://codechips.me/svelte-postcss-and-typescript-with-svite
 
 TailwindCSS
 - https://tailwindcss.com
@@ -15,6 +21,8 @@ TailwindCSS
 - https://tailwindui.com - pre-designed components
 
 TailWindCSS icw Svelte
+- https://dev.to/swyx/how-to-set-up-svelte-with-tailwind-css-4fg5 (Most recent and concise)
+- https://www.apostrof.co/blog/getting-tailwind-css-to-integrate-nicely-with-svelte-sapper
 - https://dev.to/sarioglu/using-svelte-with-tailwindcss-a-better-approach-47ph
 - https://codechips.me/svelte-tailwind-parcel-awesome/
 - https://dev.to/muhajirdev/using-tailwindcss-with-sveltejs-2098
