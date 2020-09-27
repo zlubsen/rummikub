@@ -1,0 +1,19 @@
+#FROM openjdk:14-jdk AS build
+FROM maven:3.6-openjdk-14 AS build
+
+ENV JAR_FILE server-kotlin-1.0-SNAPSHOT-jar-with-dependencies.jar
+ENV TARGET_HOME /src/target
+ENV JAR_HOME /usr/rummikub
+
+COPY . /src
+WORKDIR /src
+RUN mvn package
+
+FROM gcr.io/distroless/java:11
+
+EXPOSE 8080
+
+COPY --from=build $TARGET_HOME/$JAR_FILE /usr/rummikub/server.jar
+
+WORKDIR /usr/rummikub
+CMD ["server.jar"]
