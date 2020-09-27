@@ -13,7 +13,10 @@
     import SlidingSidebar from "./components/utils/SlidingSidebar.svelte";
 
     const updateInterval = 120000; // every 2 minutes
-    const serverAddress = "ws://192.168.8.158:8080/join"
+    const serverAddress = __config.env.isProd ? __config.env.SERVER_URL : "ws://192.168.8.158:8080/join";
+
+    console.log("env.isProd: " + __config.env.isProd);
+    console.log("env.SERVER_URL: " + __config.env.SERVER_URL);
 
     let player = undefined;
     let currentGame = undefined;
@@ -31,9 +34,25 @@
 
     let currentPlayer = undefined;
     $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
+    let turnState = undefined;
     $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === player.id;
+    $: if (isPlayersTurn) {
+        turnState = setTurnState(false, false, false);
+        console.log("turnState is " + turnState);
+    } else {
+        turnState = undefined;
+        console.log("turnState is cleared.");
+    }
     let table = new Map();
     let hand = new Map();
+
+    function setTurnState(tableValid, playedInTurn, initialPlay) {
+        return {
+            tableIsValid : tableValid,
+            hasPlayedInTurn : playedInTurn,
+            hasInitialPlay : initialPlay
+        }
+    }
 
     let invalidPlayerNameError = undefined;
 
@@ -265,6 +284,9 @@
         games.set(message.game.gameName, message.game);
         games = games;
     });
+    messageHandlers.set("TurnState", (message) => {
+        turnState = setTurnState(message.tableIsValid, message.hasPlayedInTurn, message.hasInitialPlay)
+    });
 
     const receiveHandler = function (message) {
         if (!messageHandlers.has(message.messageType)) {
@@ -359,7 +381,6 @@
     }
 
     function eventMerge(event) {
-        console.log("eventMerge: src = " +event.detail.sourceLocation + " - tgt = " +event.detail.targetLocation);
         let msg;
         if (event.detail.sourceLocation === event.detail.targetLocation)
             msg = IDL.msgMerge(player.id, currentGame,
@@ -650,14 +671,13 @@
 </style>
 
 <!--UX:-->
-<!-- - prevent page from navigating away-->
-<!-- - review ability to click game and turn control buttons in all game states-->
+<!-- - mechanics when someone wins a game (leave / stop game)-->
 <!-- - styling of buttons-->
+<!-- - review ability to click game and turn control buttons in all game states (using TurnState object)-->
+<!-- - show size of the heap-->
+<!-- - prevent page from navigating away-->
 
 <!--Logic:-->
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->
 <!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
 <!-- - GameLogic: cannot drag back a tileset containing a joker from the table to hand (when placed there yourself in same turn); because a joker is not counted as part of the played tiles list...-->
-
-<!--TBD-->
-<!-- - send gamestate containing ‘boardIsValid’ and ‘hasPlayedInTurn’ values, to enable/disable the End Turn button.-->
