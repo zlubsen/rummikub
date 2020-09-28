@@ -8,7 +8,7 @@ import {config} from 'dotenv';
 import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
-// const env_path = production ? '~/Documents/Github/rummikub/client-svelte/envs/production' : '~/Documents/Github/rummikub/client-svelte/envs/development';
+const env_path = process.cwd() + (production ? '/envs/production/.env' : '/envs/development/.env');
 
 const preprocess = sveltePreprocess({
 	sourceMap: !production,
@@ -52,9 +52,7 @@ export default {
 			__config: JSON.stringify({
 				env: {
 					isProd: production,
-					...config().parsed
-					// ...config({ path: env_path }).parsed
-					// SERVER_URL : production ? process.env.API_URL : "ws://192.168.8.158:8080/join"
+					...config({ path: env_path }).parsed
 				}
 			}),
 		}),

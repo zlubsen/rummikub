@@ -13,10 +13,7 @@
     import SlidingSidebar from "./components/utils/SlidingSidebar.svelte";
 
     const updateInterval = 120000; // every 2 minutes
-    const serverAddress = __config.env.isProd ? __config.env.SERVER_URL : "ws://192.168.8.158:8080/join";
-
-    console.log("env.isProd: " + __config.env.isProd);
-    console.log("env.SERVER_URL: " + __config.env.SERVER_URL);
+    const serverAddress = __config.env.SERVER_URL;
 
     let player = undefined;
     let currentGame = undefined;
