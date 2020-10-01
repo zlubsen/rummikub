@@ -35,7 +35,7 @@ fun handleLeaveGame(lounge : Lounge, gameName : String, playerId : UUID) : Resul
         Failure("No game with name '$gameName' exists.")
 }
 
-fun handleStartGame(lounge : Lounge, gameName : String, playerId : UUID) : Result<ServerMessage> {
+fun handleStartGame(lounge : Lounge, gameName : String, playerId : UUID) : Result<List<ServerMessage>> {
     return if (playerIsOwner(lounge = lounge, gameName = gameName, playerId = playerId))
         startGame(game = lounge.games[gameName]!!)
     else

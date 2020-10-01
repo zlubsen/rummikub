@@ -493,7 +493,8 @@ class GameStateResponse constructor(eventNumber: Long, private val game: Game, p
                     prefix = "[",
                     postfix = "]")
                     { playerToJson(it) }
-                } 
+                },
+                "noOfTilesInHeap" : ${game.heap.size} 
             }
         """.trimIndent()
     }

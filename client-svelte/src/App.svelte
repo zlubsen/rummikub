@@ -11,6 +11,7 @@
     import {onDestroy} from "svelte";
     import TileArea from "./components/TileArea.svelte";
     import SlidingSidebar from "./components/utils/SlidingSidebar.svelte";
+    import * as SampleData from "./utils/SampleData.js"
 
     const updateInterval = 120000; // every 2 minutes
     const serverAddress = __config.env.SERVER_URL;
@@ -22,7 +23,7 @@
     let requestGamesInterval;
     let requestPlayersInterval;
     const maxNoOfLogMessages = 20;
-    let logMessage = ["Enter your name to start playing Rummikub"];
+    let logMessages = ["Enter your name to start playing Rummikub"];
 
     let players = new Map();
     let games = new Map();
@@ -31,17 +32,11 @@
 
     let currentPlayer = undefined;
     $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
-    let turnState = undefined;
+    let turnState = setTurnState(false, false, false);
     $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === player.id;
-    $: if (isPlayersTurn) {
-        turnState = setTurnState(false, false, false);
-        console.log("turnState is " + turnState);
-    } else {
-        turnState = undefined;
-        console.log("turnState is cleared.");
-    }
     let table = new Map();
     let hand = new Map();
+    let noOfTilesInHeap = 0;
 
     function setTurnState(tableValid, playedInTurn, initialPlay) {
         return {
@@ -54,7 +49,17 @@
     let invalidPlayerNameError = undefined;
 
     const testData = false;
-    if (testData) setTestData();
+    if (testData) {
+        games = SampleData.sampleGames;
+        players = SampleData.samplePlayers;
+        table = SampleData.sampleTable;
+        hand = SampleData.sampleHand;
+        player = SampleData.samplePlayer;
+        currentGame = SampleData.sampleCurrentGame;
+        currentPlayer = SampleData.sampleCurrentPlayer;
+        playersInCurrentGame = SampleData.samplePlayersInCurrentGame;
+        logMessages = SampleData.sampleMessage;
+    }
 
     const unsubscribeLogging = log.subscribe(value => {
         writeLogMessage(value);
@@ -280,9 +285,13 @@
         }
         games.set(message.game.gameName, message.game);
         games = games;
+
+        noOfTilesInHeap = message.noOfTilesInHeap;
     });
     messageHandlers.set("TurnState", (message) => {
-        turnState = setTurnState(message.tableIsValid, message.hasPlayedInTurn, message.hasInitialPlay)
+        if (message.game.gameName === currentGame && message.currentPlayer === currentPlayer) {
+            turnState = setTurnState(message.tableIsValid, message.hasPlayedInTurn, message.hasInitialPlay)
+        }
     });
 
     const receiveHandler = function (message) {
@@ -338,10 +347,10 @@
     }
 
     function writeLogMessage(message) {
-        logMessage.push(message);
-        if (logMessage.length > maxNoOfLogMessages)
-            logMessage.shift();
-        logMessage = logMessage;
+        logMessages.push(message);
+        if (logMessages.length > maxNoOfLogMessages)
+            logMessages.shift();
+        logMessages = logMessages;
     }
 
     function eventJoin(event) {
@@ -428,132 +437,6 @@
         connection.sendJson(IDL.msgRequestPlayerListForGame(player.id, event.detail.gameName));
     }
 
-    function setTestData() {
-        games.set("Aap",
-            {
-                gameName: "Aap",
-                gameState:"STARTED"
-            });
-        games.set("Noot",
-            {
-                gameName: "Noot",
-                gameState:"STARTED"
-            });
-        games.set("Mies",
-            {
-                gameName: "Mies",
-                gameState:"STARTED"
-            });
-        players.set("p1", {id:"p1", name:"MyPlayer"});
-        players.set("p2", {id:"p2", name:"OtherPlayer"});
-        players.set("p3", {id:"p3", name:"AnotherPlayer"});
-
-        player = players.get("p1");
-        currentGame = "Aap";
-        currentPlayer = "p1";
-        playersInCurrentGame = [{id:"p1", name:"MyPlayer"}, {id:"p2", name:"OtherPlayer"}, {id:"p3", name:"AnotherPlayer"}];
-
-        table.set("xxsdf1",
-            {
-                id: "xxsdf1",
-                tiles: [
-                    {color: "BLACK", number: "8", isJoker: false},
-                    {color: "BLACK", number: "9", isJoker: false},
-                    {color: "BLACK", number: "10", isJoker: false}
-                ],
-                isValid: true
-            });
-        table.set("ldjfb5",
-            {
-                id: "ldjfb5",
-                tiles: [
-                    {color: "BLUE", number: "1", isJoker: false},
-                    {color: "YELLOW", number: "1", isJoker: false},
-                    {color: "BLACK", number: "1", isJoker: false}
-                ],
-                isValid: true
-            });
-        table.set("sdlkg4",
-            {
-                id: "sdlkg4",
-                tiles: [
-                    {color: "BLUE", number: "8", isJoker: false},
-                    {color: "BLACK", number: "3", isJoker: false},
-                    {color: "RED", number: "10", isJoker: false},
-                    {color: "RED", number: "10", isJoker: true}
-                ],
-                isValid: false
-            });
-        table.set("livnr5",
-            {
-                id: "livnr5",
-                tiles: [
-                    {color: "BLUE", number: "6", isJoker: false},
-                    {color: "BLUE", number: "7", isJoker: false},
-                    {color: "BLUE", number: "8", isJoker: false},
-                    {color: "BLUE", number: "9", isJoker: false},
-                    {color: "BLUE", number: "10", isJoker: false},
-                    {color: "BLUE", number: "11", isJoker: false},
-                    {color: "BLUE", number: "12", isJoker: false},
-                    {color: "BLUE", number: "13", isJoker: false},
-                ],
-                isValid: true
-            });
-
-        hand.set("xxsdf1",
-            {
-                id: "xxsdf1",
-                tiles: [
-                    {color: "BLACK", number: "8", isJoker: false},
-                    {color: "BLACK", number: "9", isJoker: false},
-                    {color: "BLACK", number: "10", isJoker: false}
-                ],
-                isValid: true
-            });
-        hand.set("ldjfb5",
-            {
-                id: "ldjfb5",
-                tiles: [
-                    {color: "BLUE", number: "1", isJoker: false},
-                    {color: "YELLOW", number: "1", isJoker: false},
-                    {color: "BLACK", number: "1", isJoker: false}
-                ],
-                isValid: true
-            });
-        hand.set("sdlkg4",
-            {
-                id: "sdlkg4",
-                tiles: [
-                    {color: "BLUE", number: "8", isJoker: false},
-                    {color: "BLACK", number: "3", isJoker: false},
-                    {color: "RED", number: "10", isJoker: false},
-                    {color: "RED", number: "10", isJoker: true}
-                ],
-                isValid: false
-            });
-        hand.set("livnr5",
-            {
-                id: "livnr5",
-                tiles: [
-                    {color: "BLUE", number: "6", isJoker: false},
-                    {color: "BLUE", number: "7", isJoker: false},
-                    {color: "BLUE", number: "8", isJoker: false},
-                    {color: "BLUE", number: "9", isJoker: false},
-                    {color: "BLUE", number: "10", isJoker: false},
-                    {color: "BLUE", number: "11", isJoker: false},
-                    {color: "BLUE", number: "12", isJoker: false},
-                    {color: "BLUE", number: "13", isJoker: false},
-                ],
-                isValid: true
-            });
-
-        logMessage.push("Some message");
-        logMessage.push("More text");
-        logMessage.push("Very insightful, actually");
-        logMessage.push("It just keeps on going...");
-        logMessage = logMessage;
-    }
-
     const welcomeHeader = [
         {char: 'R', color: 'black'},
         {char: 'U', color: 'yellow-600'},
@@ -620,7 +503,7 @@
         <SlidingSidebar auto_minimize="true">
             <header slot="label">Turn</header>
             <div class="sidebar-content-height" slot="content">
-                <TurnControls {gameState} {isPlayersTurn}
+                <TurnControls {gameState} {isPlayersTurn} {turnState}
                               on:endTurn={eventEndTurn}
                               on:resetTurn={eventResetTurn}
                               on:takeFromHeap={eventTakeFromHeap}
@@ -629,7 +512,7 @@
         </SlidingSidebar>
     </div>
     <footer id="footer" class="footer-area h-10 bg-blue-600 p-2 flex flex-col-reverse overflow-y-auto">
-        {#each logMessage.slice().reverse() as message}
+        {#each logMessages.slice().reverse() as message}
             <div class="font-inter text-white">{message}</div>
         {/each}
     </footer>
@@ -670,7 +553,6 @@
 <!--UX:-->
 <!-- - mechanics when someone wins a game (leave / stop game)-->
 <!-- - styling of buttons-->
-<!-- - review ability to click game and turn control buttons in all game states (using TurnState object)-->
 <!-- - show size of the heap-->
 <!-- - prevent page from navigating away-->
 

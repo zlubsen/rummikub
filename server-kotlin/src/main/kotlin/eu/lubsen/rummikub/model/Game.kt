@@ -26,6 +26,7 @@ class Game constructor(val name: String, val owner : Player) {
     }
 
     fun getCurrentPlayer() : Player {
+        // TODO this can fail when a player drops out of the game; currentPlayerIndex can become out of bounds
         return players[players.keys.toList()[currentPlayerIndex]]!!
     }
 
@@ -82,6 +83,7 @@ class Game constructor(val name: String, val owner : Player) {
 
     fun stopGame() {
         gameState = GameState.STOPPED
+        currentPlayerIndex = 0
     }
 
     fun setTurn() {

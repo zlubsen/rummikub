@@ -53,17 +53,20 @@ fun leaveGame(game: Game, player: Player) : Result<List<ServerMessage>> {
     }
 }
 
-fun startGame(game: Game) : Result<ServerMessage> {
+fun startGame(game: Game) : Result<List<ServerMessage>> {
     return if (GameState.JOINING != game.gameState) {
         Failure("Game is not in a valid state to start (${game.gameState}).")
     } else if (!gameHasValidNoOfPlayers(game = game)) {
         Failure("Invalid number of players in game (${game.players.size}).")
     } else {
         game.startGame()
-        Success(
+        val messages = mutableListOf(
             GameStarted(eventNumber = 0, game = game)
-                .addRecipient(recipients = game.players.keys)
-        )
+            .addRecipient(recipients = game.players.keys))
+        messages.addAll(
+            game.players.values.map {
+                TurnState(eventNumber = 0, game = game, player = it).addRecipient(it.id)}.toList())
+        Success<List<ServerMessage>>(messages)
     }
 }
 

@@ -50,3 +50,7 @@ HTML UI components:
 
 HTML other:
 - https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload
+
+JavaScript other:
+- https://www.npmjs.com/package/dotenv (load environment variables)
+- https://medium.com/dev-cafe/how-to-setup-env-variables-to-your-svelte-js-app-c1579430f032
