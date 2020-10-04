@@ -31,10 +31,8 @@ module.exports = {
     },
   },
   variants: {
-    backgroundColor: ['responsive', 'hover'],
     width: ['responsive', 'hover'],
     cursor: ['responsive', 'hover'],
-    // display: ['responsive', 'hover', 'focus'],
   },
   plugins: [
     require('@tailwindcss/custom-forms'),

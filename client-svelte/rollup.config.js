@@ -8,7 +8,7 @@ import {config} from 'dotenv';
 import replace from '@rollup/plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
-const env_path = process.cwd() + (production ? '/envs/production/.env' : '/envs/development/.env');
+const env_path = findEnvPath();
 
 const preprocess = sveltePreprocess({
 	sourceMap: !production,
@@ -89,4 +89,11 @@ function serve() {
 			}
 		}
 	};
+}
+
+function findEnvPath() {
+	if(process.env.LOCAL_PROD !== undefined) {
+		return process.cwd() + '/envs/production_local/.env';
+	}
+	return process.cwd() + (production ? '/envs/production/.env' : '/envs/development/.env');
 }

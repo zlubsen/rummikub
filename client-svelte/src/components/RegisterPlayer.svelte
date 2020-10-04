@@ -40,7 +40,7 @@
             </p>
         </div>
         <div slot="actions" class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button id="connectButton" disabled="{!playerName}" on:click={clickConnect} class="form-input">Join lounge</button>
+            <button id="connectButton" disabled="{!playerName}" on:click={clickConnect} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Join lounge</button>
             <input type="text" id="playerName" placeholder="Pick a name..." bind:value={playerName} class="form-input">
         </div>
     </Modal>
@@ -52,8 +52,7 @@
             </svg>
         </div>
         <div class="flex items-center">
-            <button id="disconnectButton" on:click={clickDisconnect} class="form-input rounded-none">Leave lounge</button>
+            <button id="disconnectButton" on:click={clickDisconnect} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Leave lounge</button>
         </div>
     </div>
 {/if}
-

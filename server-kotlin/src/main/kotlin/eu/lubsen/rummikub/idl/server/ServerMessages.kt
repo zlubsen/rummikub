@@ -493,8 +493,7 @@ class GameStateResponse constructor(eventNumber: Long, private val game: Game, p
                     prefix = "[",
                     postfix = "]")
                     { playerToJson(it) }
-                },
-                "noOfTilesInHeap" : ${game.heap.size} 
+                }
             }
         """.trimIndent()
     }
@@ -512,7 +511,8 @@ class TurnState constructor(eventNumber: Long, private val game: Game, private v
                 "currentPlayer" : "${game.getCurrentPlayer().id}",
                 "tableIsValid" : "${tableIsValid(game = game)}",
                 "hasPlayedInTurn" : "${playerHasPlayedInTurn(game = game, player = player)}",
-                "hasInitialPlay" : "${playerHasInitialPlay(player = player)}"
+                "hasInitialPlay" : "${playerHasInitialPlay(player = player)}",
+                "noOfTilesInHeap" : ${game.heap.size}
             }
         """.trimIndent()
     }

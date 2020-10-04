@@ -64,7 +64,7 @@
     <SelectableList on:select={clickGameList} items="{[...games.values()]}" bind:selectedItem={selectedGame} />
     {#if (selectedGame && (playersInSelectedGame !== undefined || playersInSelectedGame.size > 0 )) }
         <div class="absolute inset-x-0 bottom-0 bg-blue-400">
-            <ul class="h-24">
+            <ul class="h-24 font-inter text-base text-white">
             {#each playersInSelectedGame as player}
                 <li>{player.name}</li>
             {/each}
@@ -76,22 +76,18 @@
     {#if currentGame }
         {#if isOwner }
             {#if currentIsStarted }
-                <button id="stopGameButton" on:click={clickStopGame} class="form-input">Stop game</button>
+                <button id="stopGameButton" on:click={clickStopGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Stop game</button>
             {:else}
-                <button id="startGameButton" on:click={clickStartGame} class="form-input">Start game '{currentGame}'</button>
-                <button id="removeGameButton" on:click={clickRemoveGame} class="form-input">Remove game '{currentGame}'</button>
+                <button id="startGameButton" on:click={clickStartGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Start game '{currentGame}'</button>
+                <button id="removeGameButton" on:click={clickRemoveGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Remove game '{currentGame}'</button>
             {/if}
         {:else}
-            <button id="leaveGameButton" on:click={clickLeaveGame} class="form-input">Leave Game '{currentGame}'</button>
+            <button id="leaveGameButton" on:click={clickLeaveGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Leave Game '{currentGame}'</button>
         {/if}
     {:else}
-        <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="form-input">Join Game</button>
-        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!player}" class="form-input mt-2">
-        <button id="createGameButton" on:click={clickCreateGame} disabled="{!player||!createGameName}" class="form-input">Create game</button>
+        <button id="joinGameButton" on:click={clickJoinGame} disabled="{!selectedGame || currentGame}" class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Join Game</button>
+        <input type="text" id="createGame" placeholder="Create new game..." bind:value={createGameName} disabled="{!player}" class="mt-2 px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">
+        <button id="createGameButton" on:click={clickCreateGame} disabled="{!player||!createGameName}" class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Create game</button>
     {/if}
     </div>
 </div>
-
-<style>
-
-</style>

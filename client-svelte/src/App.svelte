@@ -32,17 +32,17 @@
 
     let currentPlayer = undefined;
     $: gameState = games.has(currentGame) ? games.get(currentGame).gameState : null;
-    let turnState = setTurnState(false, false, false);
+    let turnState = setTurnState(false, false, false, 0);
     $: isPlayersTurn = currentPlayer !== undefined && currentPlayer === player.id;
     let table = new Map();
     let hand = new Map();
-    let noOfTilesInHeap = 0;
 
-    function setTurnState(tableValid, playedInTurn, initialPlay) {
+    function setTurnState(tableValid, playedInTurn, initialPlay, heapSize) {
         return {
             tableIsValid : tableValid,
             hasPlayedInTurn : playedInTurn,
-            hasInitialPlay : initialPlay
+            hasInitialPlay : initialPlay,
+            noOfTilesInHeap : heapSize
         }
     }
 
@@ -285,12 +285,14 @@
         }
         games.set(message.game.gameName, message.game);
         games = games;
-
-        noOfTilesInHeap = message.noOfTilesInHeap;
     });
     messageHandlers.set("TurnState", (message) => {
-        if (message.game.gameName === currentGame && message.currentPlayer === currentPlayer) {
-            turnState = setTurnState(message.tableIsValid, message.hasPlayedInTurn, message.hasInitialPlay)
+        if (message.game.gameName === currentGame) {
+            turnState = setTurnState(
+                message.tableIsValid,
+                message.hasPlayedInTurn,
+                message.hasInitialPlay,
+                message.noOfTilesInHeap)
         }
     });
 
@@ -305,7 +307,6 @@
     const closeHandler = function () {
         writeLogMessage("You were disconnected from the server.");
         clearState();
-        // TODO cleanup client state
     }
 
     // window.addEventListener('beforeunload', (event) => {
@@ -549,12 +550,14 @@
         height: calc(100% - 2rem);
     }
 </style>
-
 <!--UX:-->
 <!-- - mechanics when someone wins a game (leave / stop game)-->
-<!-- - styling of buttons-->
-<!-- - show size of the heap-->
+<!-- - styling in general; buttons, input fields-->
 <!-- - prevent page from navigating away-->
+<!-- - fix kotlin compiler warnings-->
+<!-- - make sidebars pinnable-->
+<!-- - login panel: message when server cannot be reached-->
+<!-- - something wrong with TurnState / GameState: correct sets are labelled incorrect, nr of tiles in heap shows as undefined -->
 
 <!--Logic:-->
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->
