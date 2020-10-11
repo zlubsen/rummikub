@@ -552,12 +552,18 @@
 </style>
 <!--UX:-->
 <!-- - mechanics when someone wins a game (leave / stop game)-->
+<!-- - Cannot Stop game as owner when some player has won.-->
 <!-- - styling in general; buttons, input fields-->
+<!-- - styling: colors on the tiles hard to see at times > make background more contrasting and more difference between red/yellow -->
 <!-- - prevent page from navigating away-->
 <!-- - fix kotlin compiler warnings-->
+<!-- - fix/handle svelte compiler warning/risk messages-->
 <!-- - make sidebars pinnable-->
 <!-- - login panel: message when server cannot be reached-->
 <!-- - something wrong with TurnState / GameState: correct sets are labelled incorrect, nr of tiles in heap shows as undefined -->
+<!-- - review when TurnState and GameState are send. Some cases seem to miss. -->
+<!-- - Vivaldi on Windows renders the splitzones incorrectly-->
+<!-- - Click 'Leave Game' requires an item in the list to be selected, should be coupled to currentGame (instead of selectedGame)-->
 
 <!--Logic:-->
 <!-- - GameLogic: Implement scoring mechanism when a player wins-->

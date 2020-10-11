@@ -54,3 +54,8 @@ HTML other:
 JavaScript other:
 - https://www.npmjs.com/package/dotenv (load environment variables)
 - https://medium.com/dev-cafe/how-to-setup-env-variables-to-your-svelte-js-app-c1579430f032
+
+NAS / SSL:
+- https://mlohr.com/websockets-for-synology-dsm/
+- https://stackoverflow.com/questions/26028971/docker-container-ssl-certificates#26181780
+- https://vertx.io/docs/vertx-core/kotlin/#ssl
