@@ -1,10 +1,12 @@
 let messageHandler;
 let closeHandler;
+let errorHandler;
 
 class Connection {
-    constructor(url, playerName, onMessageHandler, onCloseHandler) {
+    constructor(url, playerName, onMessageHandler, onCloseHandler, onErrorHandler) {
         messageHandler = onMessageHandler;
         closeHandler = onCloseHandler;
+        errorHandler = onErrorHandler;
         this.connect(url, playerName);
     }
 
@@ -17,14 +19,19 @@ class Connection {
             this.socket.onopen = function (event) {
             };
             this.socket.onclose = this.onClose;
+            this.socket.onerror = this.onError;
             return "Connection established.";
         } else {
-            return "Your browser does not support Websockets. Which is weird nowadays.";
+            return "Your browser does not support Websockets.";
         }
     }
 
     onClose(event) {
         closeHandler();
+    }
+
+    onError(event) {
+        errorHandler();
     }
 
     disconnect() {
@@ -40,7 +47,7 @@ class Connection {
         if (this.socket.readyState == WebSocket.OPEN) {
             this.socket.send(message);
         } else {
-            alert("The socket is not open.");
+            console.log("The socket is not open.");
         }
     }
 

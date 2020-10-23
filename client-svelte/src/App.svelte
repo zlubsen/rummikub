@@ -305,8 +305,13 @@
     }
 
     const closeHandler = function () {
-        writeLogMessage("You were disconnected from the server.");
+        if(player)
+            writeLogMessage("You were disconnected from the server.");
         clearState();
+    }
+
+    const errorHandler = function () {
+        writeLogMessage("Connection error.");
     }
 
     // window.addEventListener('beforeunload', (event) => {
@@ -355,7 +360,7 @@
     }
 
     function eventJoin(event) {
-        connection = new Connection(serverAddress, event.detail.playerName, receiveHandler, closeHandler);
+        connection = new Connection(serverAddress, event.detail.playerName, receiveHandler, closeHandler, errorHandler);
     }
 
     function eventLeave(event) {
@@ -482,7 +487,7 @@
                   on:merge={eventMerge}
                   on:split={eventSplit}
                   on:moveTiles={eventMoveTiles}/>
-        <SlidingSidebar auto_minimize="true">
+        <SlidingSidebar auto_minimize="false">
             <header slot="label">Games</header>
             <div class="sidebar-content-height" slot="content">
                 <GameList games="{games}" currentGame="{currentGame}" player="{player}" playersInSelectedGame="{playersInSelectedGame}"
@@ -501,7 +506,7 @@
           on:merge={eventMerge}
           on:split={eventSplit}
           on:moveTiles={eventMoveTiles}/>
-        <SlidingSidebar auto_minimize="true">
+        <SlidingSidebar auto_minimize="false">
             <header slot="label">Turn</header>
             <div class="sidebar-content-height" slot="content">
                 <TurnControls {gameState} {isPlayersTurn} {turnState}
@@ -558,8 +563,7 @@
 <!-- - prevent page from navigating away-->
 <!-- - fix kotlin compiler warnings-->
 <!-- - fix/handle svelte compiler warning/risk messages-->
-<!-- - make sidebars pinnable-->
-<!-- - login panel: message when server cannot be reached-->
+<!-- - sidebar: pinnable and close icons instead of text-->
 <!-- - something wrong with TurnState / GameState: correct sets are labelled incorrect, nr of tiles in heap shows as undefined -->
 <!-- - review when TurnState and GameState are send. Some cases seem to miss. -->
 <!-- - Vivaldi on Windows renders the splitzones incorrectly-->

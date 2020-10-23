@@ -23,6 +23,15 @@ function maximize(event) {
     }
 }
 
+function pin(event) {
+    auto_minimize = false;
+    event.stopPropagation();
+}
+function unpin(event) {
+    auto_minimize = true;
+    event.stopPropagation();
+}
+
 function sidebarMouseLeave(event) {
     if(auto_minimize)
         sidebarTimer = setTimeout(()=>{minimize(event)}, MINIMIZE_TIMEOUT);
@@ -65,7 +74,14 @@ function labelMouseEnter(event) {
     transition:fade={{delay: 250, duration: 300, easing: quintOut }}
     on:mouseleave={sidebarMouseLeave}
     on:mouseenter={sidebarMouseEnter}>
-    <header class="h-8 self-end font-inter text-inter-lg text-orange-500 text-right align-text-top cursor-pointer" on:click={minimize}>X&nbsp;&nbsp;</header>
+    <header class="h-8 self-end font-inter text-inter-base text-orange-500" on:click={minimize}>
+        {#if auto_minimize}
+            <span class="text-right align-text-top cursor-pointer" on:click={pin}>Pin&nbsp;</span>
+        {:else}
+            <span class="text-right align-text-top cursor-pointer" on:click={unpin}>Unpin&nbsp;</span>
+        {/if}
+        <span class="text-right align-text-top cursor-pointer" on:click={minimize}>Close&nbsp;</span>
+    </header>
     <slot name="content">There should be some content here...</slot>
 </div>
 {/if}
