@@ -71,14 +71,23 @@ fun startGame(game: Game) : Result<List<ServerMessage>> {
 }
 
 fun stopGame(game: Game) : Result<ServerMessage> {
-    return if (GameState.STARTED == game.gameState) {
-        game.stopGame()
-        Success(
-            GameStopped(eventNumber = 0, game = game)
-                .addRecipient(recipients = game.players.keys)
-        )
-    } else
-        Failure("Game is not in a valid state to stop (${game.gameState}).")
+    return when (game.gameState) {
+        GameState.STARTED -> {
+            game.stopGame()
+            Success(
+                GameStopped(eventNumber = 0, game = game)
+                    .addRecipient(recipients = game.players.keys)
+            )
+        }
+        GameState.FINISHED -> {
+            Success(
+                GameStopped(eventNumber = 0, game = game)
+                    .addRecipient(recipient = game.owner.id)
+            )
+        }
+        else ->
+            Failure("Game is not in a valid state to stop (${game.gameState}).")
+    }
 }
 
 fun tryMove(move: Move) : Result<MoveResult> {

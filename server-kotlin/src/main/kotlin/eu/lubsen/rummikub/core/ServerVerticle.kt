@@ -6,12 +6,16 @@ import eu.lubsen.rummikub.model.Lounge
 import eu.lubsen.rummikub.model.Player
 import eu.lubsen.rummikub.util.Failure
 import eu.lubsen.rummikub.util.Success
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.http.ServerWebSocket
 import io.vertx.core.json.JsonObject
+import io.vertx.core.net.JksOptions
+import io.vertx.core.net.PemKeyCertOptions
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.BodyHandler
@@ -21,14 +25,23 @@ import java.util.logging.LogRecord
 import java.util.logging.Logger
 
 
-class ServerVerticle : AbstractVerticle() {
+class ServerVerticle(private val ssl:Boolean) : AbstractVerticle() {
     private var clientSockets = mutableMapOf<UUID, ServerWebSocket>()
 
     private var lounge = Lounge()
 
     override fun start(future: Future<Void>) {
-        var server = vertx.createHttpServer() //HttpServerOptions().setSsl(true)
-        var router = Router.router(vertx);
+        var server = when(ssl) {
+            true -> {
+                vertx.createHttpServer(
+                    HttpServerOptions().setSsl(true).setPemKeyCertOptions(
+                        PemKeyCertOptions().setCertPath("/etc/ssl/local/cert.pem").setKeyPath("/etc/ssl/local/key.pem")))
+                // /usr/syno/etc/certificate/_archive/
+                // https://stackoverflow.com/questions/26028971/docker-container-ssl-certificates
+            }
+            false -> vertx.createHttpServer()
+        };
+        var router = Router.router(vertx)
         router.route().handler(BodyHandler.create());
 
         router.get("/").handler(this::handleRoot)
@@ -48,13 +61,21 @@ class ServerVerticle : AbstractVerticle() {
     }
 
     private fun joinClient(context: RoutingContext) {
-        var userName : String = context.request().params().get("name")
+        var name : String = context.request().params().get("name")
 
-        var webSocket = context.request().upgrade()
+        context.request().toWebSocket { ar ->
+            if (ar.succeeded() && ar.result() != null) {
+                connectHandler(name = name, webSocket = ar.result())
+            } else
+                context.response().setStatusCode(400).end()
+        }
+    }
+
+    private fun connectHandler(name: String, webSocket: ServerWebSocket) {
         webSocket.handler(this::receiveMessageHandler)
         webSocket.closeHandler { closeHandler() }
 
-        val player = Player(playerName = userName)
+        val player = Player(playerName = name)
         when(playerNameExists(lounge = lounge, name = player.playerName)) {
             true -> {
                 webSocket.writeTextMessage(PlayerNameExists(eventNumber = 0, name = player.playerName).toJson())

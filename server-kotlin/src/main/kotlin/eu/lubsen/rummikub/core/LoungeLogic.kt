@@ -79,7 +79,7 @@ fun cleanupGame(lounge: Lounge, game: Game) : Result<ServerMessage> {
 
 // TODO test
 fun findGameForPlayer(lounge: Lounge, player: Player) : Result<Game> {
-    val games = lounge.games.filter { (name,game) -> game.players.containsKey(player.id) }
+    val games = lounge.games.filter { (_,game) -> game.players.containsKey(player.id) }
     return if (games.isNotEmpty())
         Success(value = games.values.first())
     else
