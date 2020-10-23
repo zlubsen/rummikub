@@ -557,7 +557,6 @@
 </style>
 <!--UX:-->
 <!-- - mechanics when someone wins a game (leave / stop game)-->
-<!-- - Cannot Stop game as owner when some player has won.-->
 <!-- - styling in general; buttons, input fields-->
 <!-- - styling: colors on the tiles hard to see at times > make background more contrasting and more difference between red/yellow -->
 <!-- - prevent page from navigating away-->
