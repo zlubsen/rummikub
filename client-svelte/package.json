@@ -1,6 +1,6 @@
 {
   "name": "rummikub-client-svelte",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "A web client for a game of Rummikub, build with Svelte and Tailwind",
   "author": "zlubsen",
   "private": false,
