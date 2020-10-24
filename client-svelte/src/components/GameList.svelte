@@ -12,6 +12,7 @@
     let createGameName;
     $: isOwner = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).owner == player.id;
     $: currentIsStarted = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).gameState === "STARTED";
+    $: currentIsFinished = currentGame !== undefined && games.has(currentGame) && games.get(currentGame).gameState === "FINISHED";
 
     function clickGameList(event) {
         dispatch('gameDetails', {
@@ -75,7 +76,7 @@
     <div class="my-1 flex flex-col justify-between">
     {#if currentGame }
         {#if isOwner }
-            {#if currentIsStarted }
+            {#if currentIsStarted || currentIsFinished }
                 <button id="stopGameButton" on:click={clickStopGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Stop game</button>
             {:else}
                 <button id="startGameButton" on:click={clickStartGame} class="px-4 py-2 border border-transparent text-sm leading-5 font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:shadow-outline-indigo focus:border-indigo-700 active:bg-indigo-700 transition duration-150 ease-in-out">Start game '{currentGame}'</button>

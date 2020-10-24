@@ -458,7 +458,7 @@
     <header id="header" class="header-area h-16 bg-blue-600 p-1 flex flex-no-wrap items-stretch justify-between">
         <div class="flex flex-row flex-start">
             {#each welcomeHeader as tile}
-                <div class="w-12 border border-gray-300 rounded bg-orange-200 text-center align-text-top text-3xl text-{tile.color}">
+                <div class="w-12 border border-gray-300 rounded bg-orange-200 text-center align-text-top text-3xl font-bold text-{tile.color}">
                     {tile.char}
                 </div>
             {/each}
@@ -555,20 +555,3 @@
         height: calc(100% - 2rem);
     }
 </style>
-<!--UX:-->
-<!-- - mechanics when someone wins a game (leave / stop game)-->
-<!-- - styling in general; buttons, input fields-->
-<!-- - styling: colors on the tiles hard to see at times > make background more contrasting and more difference between red/yellow -->
-<!-- - prevent page from navigating away-->
-<!-- - fix kotlin compiler warnings-->
-<!-- - fix/handle svelte compiler warning/risk messages-->
-<!-- - sidebar: pinnable and close icons instead of text-->
-<!-- - something wrong with TurnState / GameState: correct sets are labelled incorrect, nr of tiles in heap shows as undefined -->
-<!-- - review when TurnState and GameState are send. Some cases seem to miss. -->
-<!-- - Vivaldi on Windows renders the splitzones incorrectly-->
-<!-- - Click 'Leave Game' requires an item in the list to be selected, should be coupled to currentGame (instead of selectedGame)-->
-
-<!--Logic:-->
-<!-- - GameLogic: Implement scoring mechanism when a player wins-->
-<!-- - GameLogic: Implement finish condition when no more players can make a valid move and heap is empty.-->
-<!-- - GameLogic: cannot drag back a tileset containing a joker from the table to hand (when placed there yourself in same turn); because a joker is not counted as part of the played tiles list...-->

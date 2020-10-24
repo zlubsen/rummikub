@@ -17,7 +17,7 @@
     }
 </script>
 
-<div class="w-12 h-16 border border-gray-300 rounded bg-orange-200 text-center text-2xl text-{colorToStyle(tile.color)}">
+<div class="w-12 h-16 border border-gray-300 rounded bg-orange-200 text-center text-2xl font-bold text-{colorToStyle(tile.color)}">
     {#if tile.isJoker}
         &#129313;
 <!--        TODO: nice icon for the joker (aligning SVG image was a pain) -->
