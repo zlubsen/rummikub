@@ -248,6 +248,9 @@ fun moveResponse(game: Game, result: Result<MoveResult>) : Result<List<ServerMes
                                 GameStateResponse(eventNumber = 0, game = game, player = it)
                                     .addRecipient(recipient = it.id)
                             })
+                        items.addAll(game.players.values
+                            .map { TurnState(eventNumber = 0, game = game, player = it)
+                                .addRecipient(recipient = it.id) })
                         items
                     }
                     MoveType.TABLE_TO_HAND -> {
