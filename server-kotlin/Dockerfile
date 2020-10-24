@@ -1,6 +1,6 @@
 FROM openjdk:14-alpine
 
-ENV JAR_FILE server-kotlin-1.0-SNAPSHOT-jar-with-dependencies.jar
+ENV JAR_FILE server-kotlin-1.0-jar-with-dependencies.jar
 ENV JAR_HOME /usr/rummikub
 
 EXPOSE 8080
