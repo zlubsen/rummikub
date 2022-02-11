@@ -17,7 +17,7 @@
         <kotlin.compiler.jvmTarget>13</kotlin.compiler.jvmTarget>
         <junit.version>4.13.1</junit.version>
         <junit-jupiter.version>5.7.0-RC1</junit-jupiter.version>
-        <vertx.version>3.9.3</vertx.version>
+        <vertx.version>3.9.4</vertx.version>
     </properties>
 
     <dependencies>
